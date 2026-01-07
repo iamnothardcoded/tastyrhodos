@@ -1,2 +1,4 @@
 *
-!.gitignore
+  !.gitignore
+  !igniter-cart/
+  !igniter-cart/**
