@@ -1,0 +1,32 @@
+{
+    "name": "jamasa/core",
+    "type": "tastyigniter-package",
+    "description": "Core customizations for TastyRhodos - view overrides, translations, and business logic.",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "TastyRhodos"
+        }
+    ],
+    "require": {
+        "tastyigniter/core": "^v4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jamasa\\Core\\": "src/"
+        }
+    },
+    "extra": {
+        "tastyigniter-extension": {
+            "code": "jamasa.core",
+            "name": "Jamasa Core",
+            "icon": {
+                "class": "fa fa-puzzle-piece",
+                "color": "#fff",
+                "backgroundColor": "#3498db"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

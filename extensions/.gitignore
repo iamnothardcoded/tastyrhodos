@@ -1,3 +1,7 @@
 *
+!igniter/
+igniter/*
 !igniter/demo/
+!jamasa/
+!jamasa/**
 !.gitignore
