@@ -20,8 +20,12 @@ class PickupCode
      * @param string $hash The 32-character MD5 hash from the order
      * @return string The 4-character pickup code (e.g., "L899")
      */
-    public static function fromHash(string $hash): string
+    public static function fromHash(?string $hash): string
     {
+        if (empty($hash) || strlen($hash) < 5) {
+            return '----';
+        }
+
         // First 2 hex chars -> letter (A-Z)
         $letterIndex = hexdec(substr($hash, 0, 2)) % 26;
         $letter = chr(ord('A') + $letterIndex);
