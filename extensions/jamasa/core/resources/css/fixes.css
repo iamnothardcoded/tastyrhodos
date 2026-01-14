@@ -1,0 +1,3 @@
+/* Fix: Carousel indicators blocking clicks */
+  .carousel-indicators { pointer-events: none; }
+  .carousel-indicators [data-bs-target] { pointer-events: auto; }

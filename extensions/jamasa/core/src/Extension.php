@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jamasa\Core;
 
+use Igniter\Main\Classes\MainController;
 use Igniter\System\Classes\BaseExtension;
 use Illuminate\Support\Facades\Blade;
 use Jamasa\Core\Helpers\PickupCode;
@@ -35,6 +36,13 @@ class Extension extends BaseExtension
         // Usage in views: @pickupCode($order->hash)
         Blade::directive('pickupCode', function (string $expression): string {
             return "<?php echo \Jamasa\Core\Helpers\PickupCode::fromHash({$expression}); ?>";
+        });
+
+        // Register CSS assets for all frontend pages
+        MainController::extend(function ($controller): void {
+            $controller->bindEvent('controller.beforeRemap', function () use ($controller): void {
+                $controller->addCss('jamasa.core::/css/fixes.css', 'jamasa-fixes');
+            });
         });
     }
 }
