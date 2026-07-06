@@ -1,0 +1,67 @@
+# Design-machine dev stack for the Rhodos ordering theme.
+#
+# Runs TastyIgniter from the published image and mounts the jamasa extension
+# (the theme you edit) on top. No print-server here — it needs a USB thermal
+# printer + privileged host networking that macOS Docker Desktop can't provide,
+# and it's irrelevant to design work.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   open http://localhost:8080
+#
+# After editing Blade/CSS you MUST restart the app for changes to appear
+# (the image ships opcache.validate_timestamps=0):
+#
+#   docker compose -f docker-compose.dev.yml restart app
+#
+# Use `restart app` — never `down` (that can wipe the DB volume).
+
+services:
+  app:
+    image: iamnothardcoded/tastyigniter:latest
+    container_name: tastyigniter-app
+    ports:
+      - "8080:80"
+    environment:
+      - APP_URL=http://localhost:8080
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_DATABASE=tastyigniter
+      - DB_USERNAME=tastyigniter
+      - DB_PASSWORD=somepassword
+      - CACHE_DRIVER=redis
+      - REDIS_HOST=redis
+    volumes:
+      - storage:/var/www/html/storage
+      # The theme you edit — bind-mounted live from this clone:
+      - ./extensions/jamasa:/var/www/html/extensions/jamasa
+      # German / label overrides:
+      - ./lang/vendor:/var/www/html/lang/vendor
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.7
+    container_name: tastyigniter-db
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      - MYSQL_DATABASE=tastyigniter
+      - MYSQL_USER=tastyigniter
+      - MYSQL_PASSWORD=somepassword
+    volumes:
+      - db-data:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:6
+    container_name: tastyigniter-redis
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  storage:
+  db-data:
+  redis-data:
