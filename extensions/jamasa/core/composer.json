@@ -9,7 +9,8 @@
         }
     ],
     "require": {
-        "tastyigniter/core": "^v4.0"
+        "tastyigniter/core": "^v4.0",
+        "tastyigniter/ti-ext-api": "^v4.0"
     },
     "autoload": {
         "psr-4": {

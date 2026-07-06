@@ -7,6 +7,7 @@ namespace Jamasa\Core;
 use Igniter\Main\Classes\MainController;
 use Igniter\System\Classes\BaseExtension;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Jamasa\Core\Helpers\PickupCode;
 use Override;
 
@@ -25,9 +26,11 @@ class Extension extends BaseExtension
     public function boot(): void
     {
         // Override views from igniter-cart extension
+        // Place your overrides in: resources/views/igniter-cart/
         $this->loadViewsFrom(__DIR__.'/../resources/views/igniter-cart', 'igniter-cart');
 
         // Override views from igniter-orange theme
+        // Place your overrides in: resources/views/igniter-orange/
         $this->loadViewsFrom(__DIR__.'/../resources/views/igniter-orange', 'igniter-orange');
 
         // Register Blade directive for pickup code
@@ -43,5 +46,11 @@ class Extension extends BaseExtension
             });
         });
 
+        // Register the ordering-settings API under the same prefix + Sanctum auth
+        // as the rest of the TastyIgniter API. Falls back to hardcoded values so a
+        // boot-order/config timing issue can't leave the route unregistered.
+        Route::prefix(config('igniter-api.prefix') ?: 'api')
+            ->middleware(config('igniter-api.middleware') ?: ['api', \Igniter\Api\Http\Middleware\Authenticate::class])
+            ->group(__DIR__.'/../routes/api.php');
     }
 }
