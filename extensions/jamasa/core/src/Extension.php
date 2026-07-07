@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Jamasa\Core;
 
+use Igniter\Local\Events\WorkingScheduleCreatedEvent;
 use Igniter\Main\Classes\MainController;
 use Igniter\System\Classes\BaseExtension;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Jamasa\Core\Helpers\PickupCode;
+use Jamasa\Core\Listeners\PauseWorkingSchedule;
 use Override;
 
 /**
@@ -45,6 +48,12 @@ class Extension extends BaseExtension
                 $controller->addCss('jamasa.core::/css/fixes.css', 'jamasa-fixes');
             });
         });
+
+        // When ordering is paused (jamasa_ordering_state.paused), force the
+        // location's working schedule closed so the storefront shows the native
+        // "CLOSED" state (browsable menu, checkout gated) instead of disabling
+        // order types (redirect loop) or the location (500). See PauseWorkingSchedule.
+        Event::listen(WorkingScheduleCreatedEvent::class, [PauseWorkingSchedule::class, 'handle']);
 
         // Register the ordering-settings API under the same prefix + Sanctum auth
         // as the rest of the TastyIgniter API. Falls back to hardcoded values so a

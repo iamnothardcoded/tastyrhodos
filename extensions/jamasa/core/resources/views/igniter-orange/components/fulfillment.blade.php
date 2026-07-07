@@ -1,16 +1,16 @@
 {{-- jamasa/core override of igniter-orange::components.fulfillment --}}
-{{-- Only change vs stock: when ordering is paused by the printer going offline, --}}
-{{-- show a friendly "kitchen on a break" message instead of the bare "CLOSED". --}}
-{{-- A normal after-hours / disabled close still shows the stock "CLOSED". --}}
+{{-- Only change vs stock: when ordering is paused (printer offline / kitchen on --}}
+{{-- a break / overloaded), show friendly reason-specific copy instead of the bare --}}
+{{-- "CLOSED". While paused the schedule is forced closed but the order type stays --}}
+{{-- ENABLED (see PauseWorkingSchedule), so we key off OrderingState, not isDisabled. --}}
+{{-- A normal after-hours close still shows the stock "CLOSED". --}}
 <div class="d-flex align-items-center">
     <div>
         <i class="far fa-clock me-2"></i>
-        @if (!$activeOrderType || $activeOrderType->isDisabled())
-            @if (\Jamasa\Core\Helpers\OrderingState::isPrinterPaused())
-                {{ \Jamasa\Core\Helpers\OrderingState::message() }}
-            @else
-                @lang('igniter.cart::default.text_is_closed')
-            @endif
+        @if (\Jamasa\Core\Helpers\OrderingState::isPaused())
+            {{ \Jamasa\Core\Helpers\OrderingState::message() }}
+        @elseif (!$activeOrderType || $activeOrderType->isDisabled())
+            @lang('igniter.cart::default.text_is_closed')
         @else
             {{ $activeOrderType->getLabel() }}&nbsp;·
             @if ($isAsap)

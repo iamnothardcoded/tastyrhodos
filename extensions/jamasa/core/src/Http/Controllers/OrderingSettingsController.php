@@ -14,22 +14,29 @@ use Illuminate\Routing\Controller;
 /**
  * Ordering settings API for operator tooling (print-server, staff app).
  *
- * Pauses/resumes online ordering by flipping the order-type `is_enabled` flags
- * in `location_settings` — the same rows the storefront reads via
- * Location::getSettings('collection.is_enabled'). This never touches
- * `location_status`, so it stays clear of the disabled-location path and shows
- * TastyIgniter's existing "CLOSED" state instead of a hard-closed location.
+ * Pauses/resumes online ordering by writing a `paused` flag to a dedicated
+ * `jamasa_ordering_state` settings row. The actual "closed" behaviour is applied
+ * by the PauseWorkingSchedule listener, which — while that flag is set — forces
+ * the location's working schedule closed via a WorkingSchedule exception.
  *
- * State + a snapshot of the pre-pause flags live in a dedicated
- * `jamasa_ordering_state` settings row so resume restores the exact prior state
- * (not a hardcoded default) and pause/resume are idempotent.
+ * Why the flag + schedule exception (and NOT disabling order types or the
+ * location):
+ *  - Disabling BOTH order types (`{type}.is_enabled = 0`) sends TI's
+ *    FulfillmentModal into an infinite redirect loop (no valid order type).
+ *  - Disabling the location (`location_status = 0`) 500s (issue #1184).
+ *  - Forcing the schedule closed leaves the location + order types ENABLED and
+ *    reproduces TI's native nightly "CLOSED" state: menu browses, checkout is
+ *    gated, nothing goes null. See PauseWorkingSchedule for the mechanism.
+ *
+ * State lives in one row so pause/resume are idempotent and a printer resume
+ * cannot clobber a manual admin pause.
  */
 class OrderingSettingsController extends Controller
 {
     /** Order types we gate. */
     protected array $orderTypes = ['collection', 'delivery'];
 
-    /** The settings row that holds our pause state + snapshot. */
+    /** The settings row that holds our pause state. */
     protected string $stateItem = 'jamasa_ordering_state';
 
     public function show(Request $request): JsonResponse
@@ -85,9 +92,9 @@ class OrderingSettingsController extends Controller
     }
 
     /**
-     * Disable every currently-enabled order type, remembering the prior state.
-     * Idempotent: if already paused we do NOT re-snapshot (that would capture the
-     * already-disabled values and make resume a no-op).
+     * Mark ordering paused. The PauseWorkingSchedule listener reads this flag and
+     * forces the schedule closed; order types + location stay enabled. Idempotent:
+     * a second pause is a no-op so paused_since / paused_by are not overwritten.
      */
     protected function pause(Location $location, string $source, ?string $reason): void
     {
@@ -96,30 +103,17 @@ class OrderingSettingsController extends Controller
             return;
         }
 
-        $snapshot = [];
-        foreach ($this->orderTypes as $type) {
-            $settings = LocationSettings::instance($location, $type);
-            $enabled = (int) $settings->get('is_enabled', 1);
-            $snapshot[$type] = ['is_enabled' => $enabled];
-
-            if ($enabled === 1) {
-                $settings->is_enabled = 0;
-                $settings->save();
-            }
-        }
-
         $state->paused = true;
         $state->paused_by = $source;
         $state->paused_since = Carbon::now()->toIso8601String();
         $state->reason = $reason;
-        $state->snapshot = $snapshot;
         $state->save();
     }
 
     /**
-     * Restore each order type to its snapshotted state. Idempotent. A resume from
-     * the printer will not clobber a manual admin pause; a manual admin resume
-     * overrides regardless.
+     * Clear the pause flag; the schedule rebuilds without exceptions on the next
+     * request. Idempotent. A resume from the printer will not clobber a manual
+     * admin pause; a manual admin resume overrides regardless.
      */
     protected function resume(Location $location, string $source): void
     {
@@ -132,20 +126,11 @@ class OrderingSettingsController extends Controller
             return;
         }
 
-        $snapshot = (array) $state->get('snapshot', []);
-        foreach ($this->orderTypes as $type) {
-            $previous = (int) ($snapshot[$type]['is_enabled'] ?? 1);
-            $settings = LocationSettings::instance($location, $type);
-            $settings->is_enabled = $previous;
-            $settings->save();
-        }
-
         $state->paused = false;
         $state->paused_by = null;
         $state->paused_since = null;
         $state->last_reminder_at = null;
         $state->reason = null;
-        $state->snapshot = [];
         $state->save();
     }
 
