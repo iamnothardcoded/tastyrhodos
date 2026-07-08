@@ -154,9 +154,10 @@
     // Restore on load
     restoreFields();
 
-    // Clear on success page
-    if (window.location.pathname.includes('/success')) {
-        localStorage.removeItem(STORAGE_KEY);
-    }
+    // DELIBERATE (decided 2026-07-09): fields are NOT cleared after a successful
+    // order — a returning customer finds name/phone/email prefilled on their next
+    // visit, which is the right UX for a repeat-order takeaway business. (An earlier
+    // clear-on-success check here was dead code anyway: this script only renders on
+    // the checkout form page, never on /checkout/success.)
 </script>
 @endscript
