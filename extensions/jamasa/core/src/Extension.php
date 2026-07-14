@@ -46,8 +46,22 @@ class Extension extends BaseExtension
         MainController::extend(function ($controller): void {
             $controller->bindEvent('controller.beforeRemap', function () use ($controller): void {
                 $controller->addCss('jamasa.core::/css/fixes.css', 'jamasa-fixes');
+                // Famedo design system — layers over the theme CSS (added last =
+                // wins the cascade). Scoped under the `famedo` body class.
+                $controller->addCss('jamasa.core::/css/famedo.css', 'jamasa-famedo');
+                // Famedo JS shims (sheet grip swipe-to-close, …)
+                $controller->addJs('jamasa.core::/js/famedo.js', 'jamasa-famedo-js');
             });
         });
+
+        // Self-hosted fonts + Font Awesome (DSGVO: no Google Fonts / cdnjs requests).
+        // Deploy step: php artisan vendor:publish --tag=jamasa-assets --force
+        // famedo.css references these via absolute /vendor/jamasa/... URLs because
+        // TI's asset combiner rewrites relative url()s against its virtual route.
+        $this->publishes([
+            __DIR__.'/../resources/fonts' => public_path('vendor/jamasa/fonts'),
+            __DIR__.'/../resources/fontawesome' => public_path('vendor/jamasa/fontawesome'),
+        ], 'jamasa-assets');
 
         // When ordering is paused (jamasa_ordering_state.paused), force the
         // location's working schedule closed so the storefront shows the native

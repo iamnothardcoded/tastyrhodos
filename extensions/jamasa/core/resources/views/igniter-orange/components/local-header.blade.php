@@ -1,0 +1,50 @@
+{{-- jamasa/core override of igniter-orange::components.local-header (forked from ti-theme-orange v4.1.3) --}}
+{{-- Famedo hero: cover image, open badge, floating logo card, name + stats.
+     Keeps the info/reviews offcanvas includes and their triggers. --}}
+@php($schedule = $currentSchedule($locationInfo))
+<div class="hero__cover" @if($locationInfo->hasThumb()) style="background-image:url('{{ $locationInfo->getThumb(['width' => 1200, 'height' => 420]) }}')" @endif>
+    <div @class(['hero__badge', 'closed' => !$schedule->isOpen()])>
+        <span class="dot"></span>
+        @if ($schedule->isOpen())
+            @lang('igniter.local::default.text_is_opened')
+        @elseif ($schedule->isOpening())
+            {!! sprintf(lang('igniter.local::default.text_opening_time'), make_carbon($schedule->getOpenTime())->isoFormat(lang('igniter::system.moment.day_time_format_short'))) !!}
+        @else
+            @lang('igniter.local::default.text_closed')
+        @endif
+    </div>
+</div>
+<div class="hero__card">
+    @if(isset($theme) && $theme->logo_image)
+        <div class="hero__logo"><img src="{{ media_url($theme->logo_image) }}" alt="{{ $locationInfo->name }}"></div>
+    @endif
+    <h1 class="hero__name">{{ $locationInfo->name }}</h1>
+    @if(strlen(strip_tags((string) $locationInfo->description)))
+        <p class="hero__cuisine">{{ str_limit(trim(strip_tags((string) $locationInfo->description)), 90) }}</p>
+    @endif
+    <div class="hero__stats">
+        <span class="stat stat--muted">{{ format_address($locationInfo->address, false) }}</span>
+        <span class="stat">
+            <a
+                class="cursor-pointer"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#localInfoCanvas"
+                aria-controls="localInfoCanvas"
+            >@lang('igniter.local::default.text_more_info')</a>
+        </span>
+        @if ($allowReviews)
+            <span class="stat">
+                <x-igniter-orange::star-rating :score="$locationInfo->reviewsScore()">
+                    <a
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#reviewsOffCanvas"
+                        aria-controls="reviewsOffCanvas"
+                        class="cursor-pointer"
+                    ><span class="small">({{ $locationInfo->reviewsCount() }}) @lang('igniter.orange::default.text_reviews')</span></a>
+                </x-igniter-orange::star-rating>
+            </span>
+        @endif
+    </div>
+</div>
+@include('igniter-orange::includes.local.info-offcanvas')
+@include('igniter-orange::includes.local.reviews-offcanvas')
