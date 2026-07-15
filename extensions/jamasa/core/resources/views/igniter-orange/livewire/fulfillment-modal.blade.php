@@ -62,15 +62,30 @@
                                     </div>
                                 @endif
 
+                                @php
+                                    // Max 4 bubbles per hour: bucket the real slots into quarter
+                                    // hours and show the slot CLOSEST to each quarter (:45 taken
+                                    // → :50 stands in). Every bubble stays a real, bookable slot
+                                    // key, so validation is untouched. Works for any interval:
+                                    // 15 min → exact quarters, 5 min → quarters unless blocked.
+                                    $famedoSlots = [];
+                                    foreach (array_get($timeslotTimes, $orderDate, []) as $slotKey => $slotLabel) {
+                                        $minute = (int) substr((string) $slotKey, -2);
+                                        $bucket = substr((string) $slotKey, 0, 2).'-'.intdiv($minute, 15);
+                                        $dist = abs($minute - (intdiv($minute, 15) * 15));
+                                        if (!isset($famedoSlots[$bucket]) || $dist < $famedoSlots[$bucket]['dist']) {
+                                            $famedoSlots[$bucket] = ['key' => $slotKey, 'label' => $slotLabel, 'dist' => $dist];
+                                        }
+                                    }
+                                @endphp
                                 <div class="pickslots">
-                                    @foreach(array_get($timeslotTimes, $orderDate, []) as $key => $value)
-                                        @continue(!in_array(substr((string) $key, -2), ['00', '15', '30', '45']))
+                                    @foreach($famedoSlots as $slot)
                                         <button
                                             type="button"
-                                            @class(['slot', 'on' => !$isAsap && $orderTime === $key])
-                                            x-on:click="$wire.set('isAsap', 0, false); $wire.set('orderTime', '{{ $key }}')"
+                                            @class(['slot', 'on' => !$isAsap && $orderTime === $slot['key']])
+                                            x-on:click="$wire.set('isAsap', 0, false); $wire.set('orderTime', '{{ $slot['key'] }}')"
                                             @disabled($previewMode)
-                                        >{{ $value }}</button>
+                                        >{{ $slot['label'] }}</button>
                                     @endforeach
                                 </div>
                             @endif
