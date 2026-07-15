@@ -486,6 +486,15 @@ body.famedo{
 .famedo .famedo-co-fulfillment .toggle{margin:0 0 4px}
 .famedo .famedo-co-fulfillment .mode__info{margin:6px 0 0}
 .famedo .famedo-checkout__summary{margin:16px 12px 28px}
+.famedo .famedo-addr{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:13.5px;
+}
+.famedo .famedo-addr__ic{color:var(--brand-deep);margin-top:2px}
+.famedo .famedo-addr__main{flex:1;min-width:0}
+.famedo .famedo-addr__empty{color:var(--muted)}
+.famedo .famedo-addr__change{flex:none;font-weight:600;font-size:12.5px;color:var(--brand-deep);text-decoration:underline;cursor:pointer}
 .famedo .famedo-payrow-check{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:0;min-height:0;flex-wrap:wrap}
 .famedo .famedo-payrow-check .form-check-input{order:2;margin:0;flex:none}
 .famedo .famedo-payrow-check .payrow__main{order:1;flex:1;min-width:0}

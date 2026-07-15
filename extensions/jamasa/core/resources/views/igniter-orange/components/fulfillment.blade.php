@@ -53,9 +53,12 @@
         ])>
             <div class="toggle__thumb"></div>
             @foreach ($orderTypes as $orderType)
+                {{-- data-bs-toggle stays as no-JS fallback (opens the sheet);
+                     famedo.js additionally switches the order type inline. --}}
                 <button
                     type="button"
                     @class(['on' => $orderType->getCode() === $activeOrderType->getCode()])
+                    data-famedo-ordertype="{{ $orderType->getCode() }}"
                     data-bs-toggle="modal"
                     data-bs-target="#fulfillmentModal"
                 >{{ $orderType->getLabel() }}</button>

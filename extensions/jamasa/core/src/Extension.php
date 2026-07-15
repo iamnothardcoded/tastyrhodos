@@ -63,6 +63,24 @@ class Extension extends BaseExtension
             __DIR__.'/../resources/fontawesome' => public_path('vendor/jamasa/fontawesome'),
         ], 'jamasa-assets');
 
+        // German market defaults for geocoding (vendor config ships GB region;
+        // the theme passes countrycodes per-query, but CLI/API paths fall back
+        // to this config — keep it correct for famedo tenants).
+        config([
+            'igniter-geocoder.providers.nominatim.region' => 'DE',
+            'igniter-geocoder.providers.nominatim.locale' => 'de',
+        ]);
+
+        // Fixed Nominatim provider (empty-title suggestions for plain addresses
+        // break delivery-address selection — see Geolite\NominatimProvider).
+        // Overrides the built-in creator; the chain driver resolves through it too.
+        \Igniter\Flame\Geolite\Facades\Geocoder::extend('nominatim', function($container) {
+            return new \Jamasa\Core\Geolite\NominatimProvider(
+                $container['geocoder.client'],
+                $container['config']['igniter-geocoder.providers.nominatim'] ?? [],
+            );
+        });
+
         // When ordering is paused (jamasa_ordering_state.paused), force the
         // location's working schedule closed so the storefront shows the native
         // "CLOSED" state (browsable menu, checkout gated) instead of disabling
