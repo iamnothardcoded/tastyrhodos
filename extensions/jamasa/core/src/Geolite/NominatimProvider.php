@@ -25,6 +25,14 @@ use Override;
  *
  * Registered over the built-in 'nominatim' creator in Extension::boot();
  * the chain provider resolves through the same custom creator.
+ *
+ * ⚠️ TEMPORARY WORKAROUND — submitted upstream as
+ * https://github.com/tastyigniter/core/pull/65
+ * Once that PR is merged AND our installed tastyigniter/core includes it
+ * (check the release notes / `->title(` line in the vendor provider), DELETE
+ * this class and its Geocoder::extend('nominatim', ...) registration in
+ * Extension::boot(). Keep the region/locale DE config block — that part is
+ * a famedo default, not a bug workaround.
  */
 class NominatimProvider extends BaseNominatimProvider
 {
