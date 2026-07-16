@@ -1,7 +1,7 @@
 {
     "name": "jamasa/core",
     "type": "tastyigniter-package",
-    "description": "Core customizations for TastyRhodos - view overrides, translations, and business logic.",
+    "description": "Famedo platform business logic: ordering pause machinery, pickup codes, geocoder fixes, operator API, and igniter-cart mail/invoice overrides. The storefront frontend lives in the famedo theme.",
     "license": "proprietary",
     "authors": [
         {
