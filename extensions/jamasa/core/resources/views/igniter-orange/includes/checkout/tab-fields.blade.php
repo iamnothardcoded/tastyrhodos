@@ -151,13 +151,22 @@
     // Save before leaving page
     window.addEventListener('beforeunload', saveFields);
 
-    // Restore on load
-    restoreFields();
-
     // DELIBERATE (decided 2026-07-09): fields are NOT cleared after a successful
     // order — a returning customer finds name/phone/email prefilled on their next
     // visit, which is the right UX for a repeat-order takeaway business. (An earlier
     // clear-on-success check here was dead code anyway: this script only renders on
     // the checkout form page, never on /checkout/success.)
+    //
+    // ⚠️ TWO LANDMINES in this block (both broke it silently 07-09 → 07-16):
+    // 1. The block must NOT end with a line comment — Livewire trims the body
+    //    and wraps it in an async IIFE, so a trailing comment swallows the
+    //    closing braces ("Unexpected end of input", block never runs).
+    // 2. Comments in here are still BLADE territory — never write a literal
+    //    at-sign directive name (like the script/endscript wrappers around
+    //    this block) inside them; Blade parses directives even in JS comments
+    //    and shreds the block into broken fragments.
+
+    // Restore on load
+    restoreFields();
 </script>
 @endscript
