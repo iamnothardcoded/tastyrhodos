@@ -1,6 +1,6 @@
-{{-- jamasa/core override of igniter-orange::includes.head (forked from ti-theme-orange v4.1.3) --}}
+{{-- famedo theme override of igniter-orange::includes.head (forked from ti-theme-orange v4.1.3) --}}
 {{-- Changes: Google Fonts + cdnjs Font Awesome removed (DSGVO) — self-hosted via
-     /vendor/jamasa/ (publish tag jamasa-assets); @font-face lives in famedo.css.
+     /vendor/famedo/ (publish tag igniter-assets); @font-face lives in famedo.css.
      Viewport re-declared without maximum-scale=1 (a11y): last viewport meta wins. --}}
 {!! get_metas() !!}
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
@@ -19,9 +19,9 @@
 @if ($page->keywords)
     <meta name="keywords" content="{{ $page->keywords }}">
 @endif
-<link rel="preload" href="/vendor/jamasa/fonts/plus-jakarta-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/vendor/jamasa/fonts/archivo-latin-800.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/vendor/jamasa/fontawesome/css/all.min.css">
+<link rel="preload" href="/vendor/famedo/fonts/plus-jakarta-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/vendor/famedo/fonts/archivo-latin-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/vendor/famedo/fontawesome/css/all.min.css">
 @themeStyles
 @if (!empty($theme->custom_css))
     <style>{{$theme->custom_css}}</style>

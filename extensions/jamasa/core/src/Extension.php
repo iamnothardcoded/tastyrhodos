@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Jamasa\Core;
 
 use Igniter\Local\Events\WorkingScheduleCreatedEvent;
-use Igniter\Main\Classes\MainController;
 use Igniter\System\Classes\BaseExtension;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -17,11 +16,15 @@ use Override;
 /**
  * Jamasa Core Extension
  *
- * Central extension for all TastyRhodos customizations.
- * Houses view overrides and business-specific logic.
+ * Business logic for the famedo platform: ordering pause machinery,
+ * pickup codes, geocoder fixes, and the operator API.
+ *
+ * The storefront frontend (view/CSS/JS overrides, fonts) lives in the
+ * famedo theme (themes/famedo). Only the igniter-cart mail/invoice
+ * overrides stay here — a local theme cannot override non-parent view
+ * namespaces (no prependNamespace hook, no service provider).
  *
  * Language overrides remain in /app/lang/vendor/ (Laravel's native mechanism).
- * View overrides are registered here to take precedence over vendor packages.
  */
 class Extension extends BaseExtension
 {
@@ -32,36 +35,11 @@ class Extension extends BaseExtension
         // Place your overrides in: resources/views/igniter-cart/
         $this->loadViewsFrom(__DIR__.'/../resources/views/igniter-cart', 'igniter-cart');
 
-        // Override views from igniter-orange theme
-        // Place your overrides in: resources/views/igniter-orange/
-        $this->loadViewsFrom(__DIR__.'/../resources/views/igniter-orange', 'igniter-orange');
-
         // Register Blade directive for pickup code
         // Usage in views: @pickupCode($order->hash)
         Blade::directive('pickupCode', function (string $expression): string {
             return "<?php echo \Jamasa\Core\Helpers\PickupCode::fromHash({$expression}); ?>";
         });
-
-        // Register CSS assets for all frontend pages
-        MainController::extend(function ($controller): void {
-            $controller->bindEvent('controller.beforeRemap', function () use ($controller): void {
-                $controller->addCss('jamasa.core::/css/fixes.css', 'jamasa-fixes');
-                // Famedo design system — layers over the theme CSS (added last =
-                // wins the cascade). Scoped under the `famedo` body class.
-                $controller->addCss('jamasa.core::/css/famedo.css', 'jamasa-famedo');
-                // Famedo JS shims (sheet grip swipe-to-close, …)
-                $controller->addJs('jamasa.core::/js/famedo.js', 'jamasa-famedo-js');
-            });
-        });
-
-        // Self-hosted fonts + Font Awesome (DSGVO: no Google Fonts / cdnjs requests).
-        // Deploy step: php artisan vendor:publish --tag=jamasa-assets --force
-        // famedo.css references these via absolute /vendor/jamasa/... URLs because
-        // TI's asset combiner rewrites relative url()s against its virtual route.
-        $this->publishes([
-            __DIR__.'/../resources/fonts' => public_path('vendor/jamasa/fonts'),
-            __DIR__.'/../resources/fontawesome' => public_path('vendor/jamasa/fontawesome'),
-        ], 'jamasa-assets');
 
         // German market defaults for geocoding (vendor config ships GB region;
         // the theme passes countrycodes per-query, but CLI/API paths fall back

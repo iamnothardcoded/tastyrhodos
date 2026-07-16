@@ -1,8 +1,11 @@
 {
     "code": "famedo",
     "name": "Famedo",
-    "description": "Famedo white-label storefront theme. Thin child of Orange: holds only the layout and page skeletons; all partial/component/livewire view overrides and CSS live in the jamasa/core extension.",
+    "description": "Famedo white-label storefront theme. Child of Orange: layouts, pages, all component/include/livewire overrides, design-system CSS/JS and self-hosted fonts. Business logic and mail/invoice overrides live in the jamasa/core extension.",
     "parent": "igniter-orange",
-    "version": "0.1.0",
-    "author": "Famedo"
+    "version": "1.0.0",
+    "author": "Famedo",
+    "require": {
+        "jamasa.core": "*"
+    }
 }
