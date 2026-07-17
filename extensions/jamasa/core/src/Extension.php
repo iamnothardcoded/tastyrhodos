@@ -76,6 +76,15 @@ class Extension extends BaseExtension
             );
         });
 
+        // Fixed PayPal client (upstream picks the API host from APP_ENV instead
+        // of the gateway's sandbox setting — see Classes\PayPalClient). Rebinding
+        // the singleton here wins because extension boot runs after payregister's
+        // $singletons registration; PaypalExpress resolves it from the container.
+        $this->app->singleton(
+            \Igniter\PayRegister\Classes\PayPalClient::class,
+            \Jamasa\Core\Classes\PayPalClient::class,
+        );
+
         // When ordering is paused (jamasa_ordering_state.paused), force the
         // location's working schedule closed so the storefront shows the native
         // "CLOSED" state (browsable menu, checkout gated) instead of disabling
