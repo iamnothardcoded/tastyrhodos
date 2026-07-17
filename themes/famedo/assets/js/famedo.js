@@ -32,6 +32,51 @@
     });
 })();
 
+/* Add-to-cart microinteractions (W1b cartbar bump + A3 check-morph, picked from
+   the microinteractions demos 2026-07-18). Orange's CartBox dispatches no
+   completion event, so we watch the cartbar count via MutationObserver: count
+   increased → the Livewire round trip succeeded and the bar is freshly
+   rendered → bump it, and morph the last-tapped simple-item + into a ✓.
+   Option items add via the sheet (no row button tapped) → only the bar bumps.
+   A failed add (paused/closed toast) never increments → no false ✓.
+   prefers-reduced-motion is honored in CSS. */
+(function () {
+    var lastCount = null;
+    var lastAddBtn = null;
+
+    document.addEventListener('click', function (e) {
+        var row = e.target.closest && e.target.closest('[data-control="menu-item"]');
+        if (row) lastAddBtn = row.querySelector('.addbtn');
+    });
+
+    function readCount() {
+        var el = document.querySelector('.cartbar__count');
+        return el ? parseInt(el.textContent, 10) : null;
+    }
+
+    function replay(el, cls, ms) {
+        el.classList.remove(cls);
+        void el.offsetWidth; // restart the animation on rapid re-adds
+        el.classList.add(cls);
+        setTimeout(function () { el.classList.remove(cls); }, ms);
+    }
+
+    new MutationObserver(function () {
+        var n = readCount();
+        if (n !== null && lastCount !== null && n > lastCount) {
+            var bar = document.querySelector('.cartbar');
+            if (bar) replay(bar, 'famedo-bump', 400);
+            if (lastAddBtn && document.contains(lastAddBtn)) {
+                replay(lastAddBtn, 'famedo-added', 600);
+            }
+            lastAddBtn = null;
+        }
+        if (n !== null) lastCount = n;
+    }).observe(document.documentElement, {subtree: true, childList: true, characterData: true});
+
+    lastCount = readCount();
+})();
+
 /* Swipe-down on a .sheet__grip closes its bottom sheet (modal or offcanvas).
    Tap-to-close is handled separately by Bootstrap via data-bs-dismiss — a
    swipe suppresses the browser click, so both gestures coexist cleanly. */

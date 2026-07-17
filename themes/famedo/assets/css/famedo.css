@@ -392,6 +392,21 @@ body.famedo{
   box-shadow:0 10px 30px rgba(200,80,10,.4);
 }
 .famedo .cartbar:active{transform:translateX(-50%) scale(.99)}
+/* ---------- Add-to-cart microinteractions (famedo.js toggles the classes) ----------
+   W1b: bar hops 6px with +1.5% scale when the cart count increases.
+   A3: the tapped + morphs into a ✓ with an expanding ring for .6s. */
+.famedo .cartbar.famedo-bump{animation:famedo-bump .35s ease}
+@keyframes famedo-bump{
+  0%,100%{transform:translateX(-50%) translateY(0) scale(1)}
+  40%{transform:translateX(-50%) translateY(-6px) scale(1.015)}
+}
+.famedo .addbtn.famedo-added{background:var(--brand);border-color:var(--brand);color:#fff;animation:famedo-addring .6s ease}
+.famedo .addbtn.famedo-added i{display:none}
+.famedo .addbtn.famedo-added::after{content:'✓';font-size:15px}
+@keyframes famedo-addring{0%{box-shadow:0 0 0 0 rgba(232,106,30,.35)}100%{box-shadow:0 0 0 10px rgba(232,106,30,0)}}
+@media (prefers-reduced-motion: reduce){
+  .famedo .cartbar.famedo-bump,.famedo .addbtn.famedo-added{animation:none}
+}
 .famedo .cartbar__count{background:rgba(255,255,255,.22);min-width:26px;height:26px;padding:0 7px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:14px}
 .famedo .cartbar__label{flex:1;font-weight:600;font-size:15px;text-align:left}
 .famedo .cartbar__total{font-weight:700;font-size:16px}
