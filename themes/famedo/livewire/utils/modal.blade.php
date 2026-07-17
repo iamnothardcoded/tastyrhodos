@@ -19,7 +19,7 @@
                 <div class="modal-body">
                     <div class="text-center">
                         <div class="ti-loading spinner-border fa-3x fa-fw" role="status"></div>
-                        <div class="fw-bold mt-2">Loading...</div>
+                        <div class="fw-bold mt-2">@lang('jamasa.core::default.ui.loading')</div>
                     </div>
                 </div>
             </div>

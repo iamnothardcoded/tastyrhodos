@@ -4,7 +4,7 @@
 <div wire:poll.120s>
     @if (!$order)
         <div class="famedo-card text-center" id="ti-order-status">
-            No order found
+            @lang('jamasa.core::default.order.none_found')
         </div>
     @else
         <div class="famedo-card" id="ti-order-status">

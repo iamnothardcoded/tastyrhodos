@@ -1,23 +1,24 @@
-subject = "Your Order Update - @pickupCode($order->hash)"
+subject = "@mailLang('order_update.subject', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])"
 ==
-Order Update!
+@mailLang('order_update.heading')
 
-Your order @pickupCode($order->hash) has been updated to the following status: {{ $status_name }}
+@mailLang('order_update.text_updated', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])
+{{ $status_name }}
 
-The comments for your order are:
+@mailLang('order_update.text_comments')
 {{ $status_comment }}
 
-To view your order progress, click the link below
+@mailLang('order_update.text_view_url')
 {{ $order_view_url }}
 ==
-Hi {{ $first_name }} {{ $last_name }},
+@mailLang('order_update.greeting', ['name' => $first_name.' '.$last_name])
 
-Your order **@pickupCode($order->hash)** has been updated to the following status: <br>
+@mailLang('order_update.html_updated', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)]) <br>
 **{{ $status_name }}**
 
-The comments for your order are: <br>
+@mailLang('order_update.text_comments') <br>
 **{{ $status_comment }}**
 
 @partial('button', ['url' => $order_view_url, 'type' => 'primary'])
-View your order progress
+@mailLang('order_update.button_view')
 @endpartial

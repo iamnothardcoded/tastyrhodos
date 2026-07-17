@@ -8,14 +8,14 @@
          per-item allergen popup = backlog (needs data from the restaurant). --}}
     @php($famedoPhone = \Igniter\Local\Facades\Location::current()?->location_telephone)
     @if($famedoPhone)
-        Fragen zu Allergenen &amp; Zusatzstoffen (LMIV)? Wir informieren dich gern:
+        @lang('jamasa.core::default.footer.allergens_phone')
         <a href="tel:{{ preg_replace('/[^+\d]/', '', $famedoPhone) }}">{{ $famedoPhone }}</a><br>
     @else
-        Allergene &amp; Zusatzstoffe gem. LMIV &mdash; bitte sprich uns an.<br>
+        @lang('jamasa.core::default.footer.allergens')<br>
     @endif
-    Alle Preise inkl. MwSt.<br>
+    @lang('jamasa.core::default.footer.prices_vat')<br>
     <div class="famedo-footer__nav">
         <x-igniter-orange::nav code="footer-menu" />
     </div>
-    Bestellsystem von <strong>Famedo</strong>
+    @lang('jamasa.core::default.footer.powered_by') <strong>Famedo</strong>
 </div>

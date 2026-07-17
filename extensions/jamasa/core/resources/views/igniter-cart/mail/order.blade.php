@@ -1,23 +1,23 @@
-subject = "{{$site_name}} order confirmation - @pickupCode($order->hash)"
+subject = "@mailLang('order.subject', ['site' => $site_name, 'code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])"
 ==
-Thank you for your order!
+@mailLang('order.heading')
 
-Hi, {{$first_name}} {{$last_name}}
+@mailLang('order.greeting', ['name' => $first_name.' '.$last_name])
 
-Your order has been received and will be with you shortly.
+@mailLang('order.text_received')
 
-To view your order progress, use the URL below:
+@mailLang('order.text_view_url')
 {{$order_view_url}}
 
-Your order number is @pickupCode($order->hash)
-This is a {{$order_type}} order.
+@mailLang('order.text_order_number', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])
+@mailLang('order.text_order_type', ['type' => $order_type])
 
-Order date: {{$order_date}}
-Requested {{$order_type}} time: {{$order_time}}
-Payment Method: {{$order_payment}}
+@mailLang('order.label_order_date') {{$order_date}}
+@mailLang('order.label_requested_time', ['type' => $order_type]) {{$order_time}}
+@mailLang('order.label_payment') {{$order_payment}}
 
 {{$order_address}}
-Restaurant: {{$location_name}}
+@mailLang('order.label_restaurant') {{$location_name}}
 
 {{$order_comment}}
 
@@ -39,18 +39,18 @@ Restaurant: {{$location_name}}
 @endif
 
 ==
-Hi {{$first_name}} {{$last_name}},
+@mailLang('order.greeting', ['name' => $first_name.' '.$last_name])
 
-## Thank you for your order!
+## @mailLang('order.heading')
 
-Your {{$order_type}} order **@pickupCode($order->hash)** has been received and will be with you shortly.
+@mailLang('order.html_received', ['type' => $order_type, 'code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])
 
-[Click here]({{$order_view_url}}) to view your order progress.
+@mailLang('order.link_progress', ['url' => $order_view_url])
 
-**Requested {{$order_type}} time:** {{$order_time}}<br>
-**Payment Method:** {{$order_payment}}<br>
-**Restaurant:** {{$location_name}}<br>
-**Delivery Address:** {{$order_address}}
+**@mailLang('order.label_requested_time', ['type' => $order_type])** {{$order_time}}<br>
+**@mailLang('order.label_payment')** {{$order_payment}}<br>
+**@mailLang('order.label_restaurant')** {{$location_name}}<br>
+**@mailLang('order.label_delivery_address')** {{$order_address}}
 
 {{$order_comment}}
 
@@ -58,9 +58,9 @@ Your {{$order_type}} order **@pickupCode($order->hash)** has been received and w
 <table border="0" cellpadding="0" cellspacing="0" width="100%">
     <thead>
     <tr>
-        <th width="50%" align="left">Name/Description</th>
-        <th align="right">Unit Price</th>
-        <th align="right">Sub Total</th>
+        <th width="50%" align="left">@mailLang('order.column_name')</th>
+        <th align="right">@mailLang('order.column_price')</th>
+        <th align="right">@mailLang('order.column_subtotal')</th>
     </tr>
     </thead>
     <tbody>

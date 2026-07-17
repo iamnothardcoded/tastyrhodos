@@ -41,7 +41,7 @@ layout: default
         type="button"
         class="sheet__grip"
         data-bs-dismiss="offcanvas"
-        aria-label="Close"
+        aria-label="{{ __('jamasa.core::default.ui.close') }}"
     ></button>
     <livewire:igniter-orange::cart-box/>
 </div>

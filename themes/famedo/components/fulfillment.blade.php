@@ -70,7 +70,7 @@
         <div class="pausebar">
             <div class="pausebar__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="5" width="3.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="3.5" height="14" rx="1.2"/></svg></div>
             <div>
-                <div class="pausebar__t">Kurze Bestellpause</div>
+                <div class="pausebar__t">@lang('jamasa.core::default.pause.title')</div>
                 <div class="pausebar__s">{{ \Jamasa\Core\Helpers\OrderingState::message() }}</div>
             </div>
         </div>
@@ -79,7 +79,7 @@
             <div class="closedbar__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
             <div>
                 <div class="closedbar__t">@lang('igniter.cart::default.text_is_closed')</div>
-                <div class="closedbar__s">Stöber gern schon in der Karte.</div>
+                <div class="closedbar__s">@lang('jamasa.core::default.closed.browse_menu')</div>
             </div>
         </div>
     @else

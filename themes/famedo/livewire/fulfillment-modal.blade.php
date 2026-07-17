@@ -28,7 +28,7 @@
                     <div class="modal-header px-4 border-bottom-0">
                         <h5 class="modal-title sheet__title fs-5"
                             id="fulfillmentModalLabel">@lang('igniter.orange::default.text_control_title')</h5>
-                        <button type="button" class="btn-close famedo-sheet-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close famedo-sheet-close" data-bs-dismiss="modal" aria-label="{{ __('jamasa.core::default.ui.close') }}"></button>
                     </div>
                     <div class="modal-body p-4 py-2">
                         <div id="local-timeslot" class="pb-3">

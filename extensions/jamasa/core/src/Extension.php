@@ -41,6 +41,14 @@ class Extension extends BaseExtension
             return "<?php echo \Jamasa\Core\Helpers\PickupCode::fromHash({$expression}); ?>";
         });
 
+        // Customer-mail translations pinned to the site default language
+        // (mail otherwise renders in the triggering context's locale — an admin
+        // status change would send English mail to German customers; see MailLang).
+        // Usage in mail templates: @mailLang('order.heading', ['name' => ...])
+        Blade::directive('mailLang', function (string $expression): string {
+            return "<?php echo \Jamasa\Core\Helpers\MailLang::get({$expression}); ?>";
+        });
+
         // German market defaults for geocoding (vendor config ships GB region;
         // the theme passes countrycodes per-query, but CLI/API paths fall back
         // to this config — keep it correct for famedo tenants).

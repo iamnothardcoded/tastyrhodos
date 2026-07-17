@@ -1,2 +1,2 @@
-*
-!.gitignore
+# Language overrides ARE tracked: the DE pack + our authored overrides ship
+# in the repo/image so tenants install offline (no hub call, no carte key).

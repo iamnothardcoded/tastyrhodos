@@ -23,16 +23,16 @@ final class OrderingState
     private const STATE_ITEM = 'jamasa_ordering_state';
 
     /**
-     * Default copy when the kitchen is paused because the printer is offline.
-     * Override via config `jamasa.core.pause_message`.
+     * Lang key for the copy when the kitchen is paused because the printer is
+     * offline. Override via config `jamasa.core.pause_message`.
      */
-    public const DEFAULT_MESSAGE = 'Die Küche macht gerade eine kurze Pause – gleich wieder für dich da!';
+    public const DEFAULT_MESSAGE_KEY = 'jamasa.core::default.pause.printer_message';
 
     /**
-     * Copy when the kitchen manually paused because it is overloaded.
-     * Override via config `jamasa.core.busy_message`.
+     * Lang key for the copy when the kitchen manually paused because it is
+     * overloaded. Override via config `jamasa.core.busy_message`.
      */
-    public const BUSY_MESSAGE = 'Wir haben gerade sehr viel zu tun – bitte versuche es in Kürze noch einmal!';
+    public const BUSY_MESSAGE_KEY = 'jamasa.core::default.pause.busy_message';
 
     /** True when ordering is paused for ANY reason (printer, manual, overloaded). */
     public static function isPaused(?LocationModel $location = null): bool
@@ -63,10 +63,10 @@ final class OrderingState
         }
 
         if (self::pausedBy($location) === 'overloaded') {
-            return (string) config('jamasa.core.busy_message', self::BUSY_MESSAGE);
+            return (string) config('jamasa.core.busy_message', lang(self::BUSY_MESSAGE_KEY));
         }
 
-        return (string) config('jamasa.core.pause_message', self::DEFAULT_MESSAGE);
+        return (string) config('jamasa.core.pause_message', lang(self::DEFAULT_MESSAGE_KEY));
     }
 
     private static function state(?LocationModel $location): ?LocationSettings

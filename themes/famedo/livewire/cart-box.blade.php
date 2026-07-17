@@ -18,7 +18,7 @@
                     <div class="minbar">
                         <div class="minbar__txt">
                             @lang('igniter.local::default.text_min_total'): {{ currency_format($minOrderTotal) }}
-                            &middot; {!! currency_format($minOrderTotal - $cart->subtotal()) !!} fehlen noch
+                            &middot; {!! __('jamasa.core::default.cart.amount_missing', ['amount' => currency_format($minOrderTotal - $cart->subtotal())]) !!}
                         </div>
                         <div class="minbar__track">
                             <div class="minbar__fill" style="width: {{ min(100, round($cart->subtotal() / $minOrderTotal * 100)) }}%"></div>

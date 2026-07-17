@@ -16,13 +16,13 @@
                 type="button"
                 class="sheet__grip"
                 data-bs-dismiss="modal"
-                aria-label="Close"
+                aria-label="{{ __('jamasa.core::default.ui.close') }}"
             ></button>
             <button
                 type="button"
                 class="btn-close famedo-sheet-close"
                 data-bs-dismiss="modal"
-                aria-label="Close"
+                aria-label="{{ __('jamasa.core::default.ui.close') }}"
             ></button>
             @if ($showThumb && $menuItemData->hasThumb())
                 <div class="modal-top sheet__cover" style="background-image:url('{!! $menuItemData->getThumb(['width' => 1200, 'height' => 400]) !!}')"></div>

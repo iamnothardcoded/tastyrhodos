@@ -21,9 +21,9 @@
                 >
                     <div class="tstep__dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
                     <div class="tstep__lbl">
-                        @if($loop->first) Eingegangen
-                        @elseif($loop->last) Fertig
-                        @else In Arbeit
+                        @if($loop->first) @lang('jamasa.core::default.status.received')
+                        @elseif($loop->last) @lang('jamasa.core::default.status.ready')
+                        @else @lang('jamasa.core::default.status.in_progress')
                         @endif
                     </div>
                 </div>
