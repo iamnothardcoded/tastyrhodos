@@ -400,6 +400,9 @@ $famedo = [
     'checkout' => [
         'label_terms' => 'Mit Klick auf Bestellen wird Ihre Bestellung kostenpflichtig abgeschickt. Sie stimmen unseren <a target="_blank" href="%s">AGB</a> zu.',
     ],
+    // item-sheet submit: the pack's "Zur Bestellung hinzufügen" is too long
+    // next to the price total (user call 2026-07-18)
+    'button_add_to_order' => 'Hinzufügen',
     // pack gaps (untranslated upstream as of 2026-07-17)
     'text_basket' => 'Warenkorb',
     'text_delivery_time_info' => 'Lieferung %s',
@@ -407,8 +410,6 @@ $famedo = [
     // %s = order type label; also shown while paused (pause-aware rewording
     // is a separate TODO in CLAUDE.md)
     'alert_outside_hours' => 'Deine gewählte Bestellzeit liegt außerhalb unserer Zeiten für %s',
-    // item sheet: compact label (pack says "Zur Bestellung hinzufügen")
-    'button_add_to_order' => 'Hinzufügen',
 ];
 
 return array_replace_recursive($pack, $famedo);
