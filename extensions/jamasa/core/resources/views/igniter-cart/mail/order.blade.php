@@ -1,23 +1,24 @@
-subject = "@mailLang('order.subject', ['site' => $site_name, 'code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])"
+subject = "@lang('jamasa.core::default.mail.order.subject', ['site' => $site_name, 'code' => $order_number], $mail_locale)"
 ==
-@mailLang('order.heading')
+@lang('jamasa.core::default.mail.order.heading', [], $mail_locale)
 
-@mailLang('order.greeting', ['name' => $first_name.' '.$last_name])
+@lang('jamasa.core::default.mail.order.greeting', ['name' => $first_name.' '.$last_name], $mail_locale)
 
-@mailLang('order.text_received')
+@lang('jamasa.core::default.mail.order.text_received', [], $mail_locale)
 
-@mailLang('order.text_view_url')
+@lang('jamasa.core::default.mail.order.text_view_url', [], $mail_locale)
 {{$order_view_url}}
 
-@mailLang('order.text_order_number', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])
-@mailLang('order.text_order_type', ['type' => $order_type])
+@lang('jamasa.core::default.mail.order.text_order_number', ['code' => $order_number], $mail_locale)
 
-@mailLang('order.label_order_date') {{$order_date}}
-@mailLang('order.label_requested_time', ['type' => $order_type]) {{$order_time}}
-@mailLang('order.label_payment') {{$order_payment}}
+@lang('jamasa.core::default.mail.order.text_order_type', ['type' => $order_type], $mail_locale)
+
+@lang('jamasa.core::default.mail.order.label_order_date', [], $mail_locale) {{$order_date}}
+@lang('jamasa.core::default.mail.order.label_requested_time', ['type' => $order_type], $mail_locale) {{$order_time}}
+@lang('jamasa.core::default.mail.order.label_payment', [], $mail_locale) {{$order_payment}}
 
 {{$order_address}}
-@mailLang('order.label_restaurant') {{$location_name}}
+@lang('jamasa.core::default.mail.order.label_restaurant', [], $mail_locale) {{$location_name}}
 
 {{$order_comment}}
 
@@ -39,18 +40,18 @@ subject = "@mailLang('order.subject', ['site' => $site_name, 'code' => \Jamasa\C
 @endif
 
 ==
-@mailLang('order.greeting', ['name' => $first_name.' '.$last_name])
+@lang('jamasa.core::default.mail.order.greeting', ['name' => $first_name.' '.$last_name], $mail_locale)
 
-## @mailLang('order.heading')
+## @lang('jamasa.core::default.mail.order.heading', [], $mail_locale)
 
-@mailLang('order.html_received', ['type' => $order_type, 'code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])
+@lang('jamasa.core::default.mail.order.html_received', ['type' => $order_type, 'code' => $order_number], $mail_locale)
 
-@mailLang('order.link_progress', ['url' => $order_view_url])
+@lang('jamasa.core::default.mail.order.link_progress', ['url' => $order_view_url], $mail_locale)
 
-**@mailLang('order.label_requested_time', ['type' => $order_type])** {{$order_time}}<br>
-**@mailLang('order.label_payment')** {{$order_payment}}<br>
-**@mailLang('order.label_restaurant')** {{$location_name}}<br>
-**@mailLang('order.label_delivery_address')** {{$order_address}}
+**@lang('jamasa.core::default.mail.order.label_requested_time', ['type' => $order_type], $mail_locale)** {{$order_time}}<br>
+**@lang('jamasa.core::default.mail.order.label_payment', [], $mail_locale)** {{$order_payment}}<br>
+**@lang('jamasa.core::default.mail.order.label_restaurant', [], $mail_locale)** {{$location_name}}<br>
+**@lang('jamasa.core::default.mail.order.label_delivery_address', [], $mail_locale)** {{$order_address}}
 
 {{$order_comment}}
 
@@ -58,9 +59,9 @@ subject = "@mailLang('order.subject', ['site' => $site_name, 'code' => \Jamasa\C
 <table border="0" cellpadding="0" cellspacing="0" width="100%">
     <thead>
     <tr>
-        <th width="50%" align="left">@mailLang('order.column_name')</th>
-        <th align="right">@mailLang('order.column_price')</th>
-        <th align="right">@mailLang('order.column_subtotal')</th>
+        <th width="50%" align="left">@lang('jamasa.core::default.mail.order.column_name', [], $mail_locale)</th>
+        <th align="right">@lang('jamasa.core::default.mail.order.column_price', [], $mail_locale)</th>
+        <th align="right">@lang('jamasa.core::default.mail.order.column_subtotal', [], $mail_locale)</th>
     </tr>
     </thead>
     <tbody>

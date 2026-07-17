@@ -31,9 +31,14 @@ class Extension extends BaseExtension
     #[Override]
     public function boot(): void
     {
-        // Override views from igniter-cart extension
-        // Place your overrides in: resources/views/igniter-cart/
-        $this->loadViewsFrom(__DIR__.'/../resources/views/igniter-cart', 'igniter-cart');
+        // Override views from the igniter.cart extension (mail templates + invoice).
+        // Place overrides in: resources/views/igniter-cart/
+        // MUST be prependNamespace on the DOTTED namespace: TI renders
+        // 'igniter.cart::mail.order' etc.; loadViewsFrom under a parallel
+        // 'igniter-cart' namespace is consulted by nothing (bug until 2026-07-17
+        // — the overrides silently never applied), and appending to
+        // 'igniter.cart' would lose to the vendor path registered first.
+        $this->app['view']->prependNamespace('igniter.cart', __DIR__.'/../resources/views/igniter-cart');
 
         // Register Blade directive for pickup code
         // Usage in views: @pickupCode($order->hash)
@@ -41,13 +46,17 @@ class Extension extends BaseExtension
             return "<?php echo \Jamasa\Core\Helpers\PickupCode::fromHash({$expression}); ?>";
         });
 
-        // Customer-mail translations pinned to the site default language
-        // (mail otherwise renders in the triggering context's locale — an admin
-        // status change would send English mail to German customers; see MailLang).
-        // Usage in mail templates: @mailLang('order.heading', ['name' => ...])
-        Blade::directive('mailLang', function (string $expression): string {
-            return "<?php echo \Jamasa\Core\Helpers\MailLang::get({$expression}); ?>";
-        });
+        // Locale for customer mail templates: mail renders in the locale of the
+        // TRIGGERING context (sync queue: an admin status change renders under
+        // the ADMIN locale — English mail to German customers). Templates pass
+        // this as @lang(..., $mail_locale) instead. Injected via View::share
+        // because TI's mail TemplateSandbox forbids static/method calls in
+        // templates, and ViewHelper::getGlobalVars() forwards shared scalars
+        // into every mail render. rescue(): boots before install have no DB.
+        \Illuminate\Support\Facades\View::share(
+            'mail_locale',
+            rescue(fn() => \Igniter\System\Models\Language::getDefault()?->code, null, false),
+        );
 
         // German market defaults for geocoding (vendor config ships GB region;
         // the theme passes countrycodes per-query, but CLI/API paths fall back

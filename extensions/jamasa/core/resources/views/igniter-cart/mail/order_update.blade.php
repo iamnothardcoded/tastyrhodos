@@ -1,24 +1,24 @@
-subject = "@mailLang('order_update.subject', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])"
+subject = "@lang('jamasa.core::default.mail.order_update.subject', ['code' => $order_number], $mail_locale)"
 ==
-@mailLang('order_update.heading')
+@lang('jamasa.core::default.mail.order_update.heading', [], $mail_locale)
 
-@mailLang('order_update.text_updated', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)])
+@lang('jamasa.core::default.mail.order_update.text_updated', ['code' => $order_number], $mail_locale)
 {{ $status_name }}
 
-@mailLang('order_update.text_comments')
+@lang('jamasa.core::default.mail.order_update.text_comments', [], $mail_locale)
 {{ $status_comment }}
 
-@mailLang('order_update.text_view_url')
+@lang('jamasa.core::default.mail.order_update.text_view_url', [], $mail_locale)
 {{ $order_view_url }}
 ==
-@mailLang('order_update.greeting', ['name' => $first_name.' '.$last_name])
+@lang('jamasa.core::default.mail.order_update.greeting', ['name' => $first_name.' '.$last_name], $mail_locale)
 
-@mailLang('order_update.html_updated', ['code' => \Jamasa\Core\Helpers\PickupCode::fromHash($order->hash)]) <br>
+@lang('jamasa.core::default.mail.order_update.html_updated', ['code' => $order_number], $mail_locale) <br>
 **{{ $status_name }}**
 
-@mailLang('order_update.text_comments') <br>
+@lang('jamasa.core::default.mail.order_update.text_comments', [], $mail_locale) <br>
 **{{ $status_comment }}**
 
 @partial('button', ['url' => $order_view_url, 'type' => 'primary'])
-@mailLang('order_update.button_view')
+@lang('jamasa.core::default.mail.order_update.button_view', [], $mail_locale)
 @endpartial
