@@ -28,6 +28,24 @@ use Override;
  */
 class Extension extends BaseExtension
 {
+    /**
+     * Override the Mollie gateway registration with our fixed subclass (see
+     * Payments\Mollie). PaymentGateways::listGateways keys by CODE with
+     * last-writer-wins, and jamasa registers after igniter.payregister, so
+     * fresh installs seed payments.class_name with the fixed class; existing
+     * rows need the one-time class_name UPDATE (runbook §3.2).
+     */
+    public function registerPaymentGateways(): array
+    {
+        return [
+            \Jamasa\Core\Payments\Mollie::class => [
+                'code' => 'mollie',
+                'name' => 'lang:igniter.payregister::default.mollie.text_payment_title',
+                'description' => 'lang:igniter.payregister::default.mollie.text_payment_desc',
+            ],
+        ];
+    }
+
     #[Override]
     public function boot(): void
     {
