@@ -138,7 +138,8 @@ body.famedo{
 .famedo .famedo-footer a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
 /* <x-igniter-orange::nav> renders a bootstrap row/col grid (stock 4-column
    dark footer) — flatten it into one centered, wrapping inline row */
-.famedo .famedo-footer__nav{margin:10px 0 12px}
+/* one empty line above and below the legal links */
+.famedo .famedo-footer__nav{margin:18px 0}
 .famedo .famedo-footer__nav .row,
 .famedo .famedo-footer__nav .row > [class*="col-"],
 .famedo .famedo-footer__nav .footer-links,

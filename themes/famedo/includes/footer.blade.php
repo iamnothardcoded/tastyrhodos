@@ -3,6 +3,7 @@
      Newsletter box and social icons dropped for pass 1. --}}
 <div class="famedo-footer">
     <strong>{{ $site_name }}</strong><br>
+    @lang('jamasa.core::default.footer.prices_vat')<br>
     {{-- LMIV/LMIDV: allergen info for loose food may be given orally IF a
          visible notice names the channel — this is that notice. Proper
          per-item allergen popup = backlog (needs data from the restaurant). --}}
@@ -14,7 +15,6 @@
     @else
         @lang('jamasa.core::default.footer.allergens')<br>
     @endif
-    @lang('jamasa.core::default.footer.prices_vat')<br>
     <div class="famedo-footer__nav">
         <x-igniter-orange::nav code="footer-menu" />
     </div>
