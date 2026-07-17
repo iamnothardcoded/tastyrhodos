@@ -1,10 +1,10 @@
 {
     "code": "famedo",
-    "name": "Famedo",
-    "description": "Famedo — mobile-first white-label ordering storefront. App-style menu column, Delivery/Pick-up pill, sheet cart, one-page checkout; tenant theming via CSS tokens, self-hosted fonts (DSGVO). Child of Orange; business logic in jamasa.core.",
+    "name": "famedo",
+    "description": "famedo — mobile-first white-label ordering storefront. App-style menu column, Delivery/Pick-up pill, sheet cart, one-page checkout; tenant theming via CSS tokens, self-hosted fonts (DSGVO). Child of Orange; business logic in jamasa.core.",
     "parent": "igniter-orange",
     "version": "1.0.0",
-    "author": "Famedo",
+    "author": "famedo",
     "require": {
         "jamasa.core": "*"
     }

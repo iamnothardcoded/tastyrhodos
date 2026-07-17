@@ -134,8 +134,20 @@ body.famedo{
   text-align:center;color:var(--muted);font-size:11.5px;line-height:1.6;
 }
 .famedo .famedo-footer strong{color:var(--ink)}
-.famedo .famedo-footer__nav .nav{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
-.famedo .famedo-footer__nav .nav-link{display:inline-block;padding:2px 6px;font-size:11.5px;color:var(--muted);text-decoration:underline}
+/* orange's stock footer is dark → its links are white; ours is light */
+.famedo .famedo-footer a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+/* <x-igniter-orange::nav> renders a bootstrap row/col grid (stock 4-column
+   dark footer) — flatten it into one centered, wrapping inline row */
+.famedo .famedo-footer__nav{margin:10px 0 12px}
+.famedo .famedo-footer__nav .row,
+.famedo .famedo-footer__nav .row > [class*="col-"],
+.famedo .famedo-footer__nav .footer-links,
+.famedo .famedo-footer__nav .footer-links ul{display:contents}
+.famedo .famedo-footer__nav > div{display:flex;justify-content:center;column-gap:18px;row-gap:6px;flex-wrap:wrap}
+/* !important: must beat bootstrap's .d-sm-block{display:block!important} */
+.famedo .famedo-footer__nav .footer-title{display:none!important}
+.famedo .famedo-footer__nav li{list-style:none;margin:0;padding:0}
+.famedo .famedo-footer__nav a{color:var(--muted)}
 
 /* ---------- Hero (menus page, components/local-header) ---------- */
 .famedo .hero{position:relative}
