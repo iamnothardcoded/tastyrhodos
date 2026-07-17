@@ -23,7 +23,8 @@ return [
     ],
 
     'footer' => [
-        'allergens_phone' => 'Questions about allergens & additives (LMIV)? We\'re happy to help:',
+        'allergens_q' => 'Questions about allergens & additives (LMIV)?',
+        'allergens_phone' => 'We\'re happy to help:',
         'allergens' => 'Allergens & additives according to LMIV — please ask us.',
         'prices_vat' => 'All prices incl. VAT.',
         'powered_by' => 'Ordering system by',

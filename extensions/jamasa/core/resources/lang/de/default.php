@@ -22,7 +22,8 @@ return [
     ],
 
     'footer' => [
-        'allergens_phone' => 'Fragen zu Allergenen & Zusatzstoffen (LMIV)? Wir informieren dich gern:',
+        'allergens_q' => 'Fragen zu Allergenen & Zusatzstoffen (LMIV)?',
+        'allergens_phone' => 'Wir informieren dich gern:',
         'allergens' => 'Allergene & Zusatzstoffe gem. LMIV — bitte sprich uns an.',
         'prices_vat' => 'Alle Preise inkl. MwSt.',
         'powered_by' => 'Bestellsystem von',

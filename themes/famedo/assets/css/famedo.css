@@ -149,6 +149,13 @@ body.famedo{
 .famedo .famedo-footer__nav li{list-style:none;margin:0;padding:0}
 .famedo .famedo-footer__nav a{color:var(--muted)}
 
+/* ---------- Static pages (Impressum/Datenschutz/AGB, _layouts/static) ---------- */
+.famedo .static-page{padding:22px 16px 40px;max-width:720px;margin:0 auto}
+.famedo .static-page__title{font-family:var(--font-head);font-weight:800;font-size:24px;margin:6px 0 16px}
+.famedo .static-page__content{font-size:14px;line-height:1.65}
+.famedo .static-page__content h2,.famedo .static-page__content h3{font-family:var(--font-head);font-weight:700;font-size:17px;margin:20px 0 8px}
+.famedo .static-page__content a{text-decoration:underline;text-underline-offset:2px}
+
 /* ---------- Hero (menus page, components/local-header) ---------- */
 .famedo .hero{position:relative}
 .famedo .hero__cover{height:210px;position:relative;overflow:hidden;background:var(--brand);background-size:cover;background-position:center}

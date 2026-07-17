@@ -8,6 +8,7 @@
          per-item allergen popup = backlog (needs data from the restaurant). --}}
     @php($famedoPhone = \Igniter\Local\Facades\Location::current()?->location_telephone)
     @if($famedoPhone)
+        @lang('jamasa.core::default.footer.allergens_q')<br>
         @lang('jamasa.core::default.footer.allergens_phone')
         <a href="tel:{{ preg_replace('/[^+\d]/', '', $famedoPhone) }}">{{ $famedoPhone }}</a><br>
     @else
@@ -17,6 +18,8 @@
     <div class="famedo-footer__nav">
         <x-igniter-orange::nav code="footer-menu" />
     </div>
-    {{-- brand is always written lowercase: "famedo" --}}
-    @lang('jamasa.core::default.footer.powered_by') <strong>famedo</strong>
+    {{-- brand is always written lowercase: "famedo"; the link is the B2B
+         touchpoint for restaurant owners → the marketing site --}}
+    @lang('jamasa.core::default.footer.powered_by')
+    <a href="https://get-famedo.de" target="_blank" rel="noopener"><strong>famedo</strong></a>
 </div>
