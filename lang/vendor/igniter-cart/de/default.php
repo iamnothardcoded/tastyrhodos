@@ -407,6 +407,8 @@ $famedo = [
     // %s = order type label; also shown while paused (pause-aware rewording
     // is a separate TODO in CLAUDE.md)
     'alert_outside_hours' => 'Deine gewählte Bestellzeit liegt außerhalb unserer Zeiten für %s',
+    // item sheet: compact label (pack says "Zur Bestellung hinzufügen")
+    'button_add_to_order' => 'Hinzufügen',
 ];
 
 return array_replace_recursive($pack, $famedo);

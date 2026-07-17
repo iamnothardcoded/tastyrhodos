@@ -400,6 +400,10 @@ body.famedo{
   0%,100%{transform:translateX(-50%) translateY(0) scale(1)}
   40%{transform:translateX(-50%) translateY(-6px) scale(1.015)}
 }
+/* pending add: the + spins until the round trip lands (famedo.js), then ✓ */
+.famedo .addbtn.famedo-loading i{animation:famedo-spin .7s linear infinite}
+.famedo .addbtn.famedo-loading i::before{content:'\f110'}
+@keyframes famedo-spin{to{transform:rotate(360deg)}}
 .famedo .addbtn.famedo-added{background:var(--brand);border-color:var(--brand);color:#fff;animation:famedo-addring .6s ease}
 .famedo .addbtn.famedo-added i{display:none}
 .famedo .addbtn.famedo-added::after{content:'✓';font-size:15px}
