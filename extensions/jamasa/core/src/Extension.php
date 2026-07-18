@@ -109,14 +109,18 @@ class Extension extends BaseExtension
         // order types (redirect loop) or the location (500). See PauseWorkingSchedule.
         Event::listen(WorkingScheduleCreatedEvent::class, [PauseWorkingSchedule::class, 'handle']);
 
-        // Mollie hosted-checkout description: German + pickup code for collection
-        // orders. ONLY $fields['description'] is touched — metadata.order_id is
-        // the webhook/return verification datum and must stay as upstream set it.
+        // Mollie hosted-checkout / bank-statement / report line: the pickup code
+        // IS the customer-facing order reference — for BOTH order types. It
+        // obfuscates sequential internal ids (they'd reveal the restaurant's
+        // real order volume) and matches the code shown on success page,
+        // customer order list, invoice and kitchen receipt → the restaurant can
+        // reconcile Mollie report lines against those artifacts. ONLY
+        // $fields['description'] is touched — metadata.order_id (unique,
+        // internal) stays untouched: webhook/return verification + dashboard
+        // tiebreak for code collisions.
         // fireSystemEvent prepends the gateway instance ($this) to the args.
         Event::listen('payregister.mollie.extendFields', function ($gateway, &$fields, $order, $data): void {
-            $fields['description'] = $order->isCollectionType()
-                ? sprintf('Abholcode %s · Bestellung #%s', PickupCode::fromHash($order->hash), $order->order_id)
-                : sprintf('Bestellung #%s', $order->order_id);
+            $fields['description'] = sprintf('Bestellung #%s', PickupCode::fromHash($order->hash));
         });
 
         // Register the ordering-settings API under the same prefix + Sanctum auth
