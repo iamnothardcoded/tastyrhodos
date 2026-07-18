@@ -46,15 +46,7 @@
 
     document.addEventListener('click', function (e) {
         var row = e.target.closest && e.target.closest('[data-control="menu-item"]');
-        if (!row) return;
-        lastAddBtn = row.querySelector('.addbtn');
-        if (lastAddBtn) {
-            // + spins while the add is in flight; cleared on success below,
-            // or by this fallback when the add fails (pause/closed toast)
-            var btn = lastAddBtn;
-            btn.classList.add('famedo-loading');
-            setTimeout(function () { btn.classList.remove('famedo-loading'); }, 5000);
-        }
+        if (row) lastAddBtn = row.querySelector('.addbtn');
     });
 
     function readCount() {
@@ -74,9 +66,6 @@
         if (n !== null && lastCount !== null && n > lastCount) {
             var bar = document.querySelector('.cartbar');
             if (bar) replay(bar, 'famedo-bump', 400);
-            document.querySelectorAll('.addbtn.famedo-loading').forEach(function (b) {
-                b.classList.remove('famedo-loading');
-            });
             if (lastAddBtn && document.contains(lastAddBtn)) {
                 replay(lastAddBtn, 'famedo-added', 600);
             }
