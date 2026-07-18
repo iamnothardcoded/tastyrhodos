@@ -539,7 +539,10 @@ body.famedo{
 .famedo .famedo-payrow-check{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:0;min-height:0;flex-wrap:wrap}
 .famedo .famedo-payrow-check .form-check-input{order:2;margin:0;flex:none}
 .famedo .famedo-payrow-check .payrow__main{order:1;flex:1;min-width:0}
-.famedo .famedo-payrow-check > *:nth-child(n+3){order:3;width:100%}
+/* children: 1=radio, 2=icon tile, 3=label — n+4 = gateway form goes full-width */
+.famedo .famedo-payrow-check > *:nth-child(n+4){order:3;width:100%}
+.famedo .payrow__ic i{font-size:17px}
+.famedo .payrow.selected .payrow__ic{color:var(--brand-deep)}
 /* fulfillment modal internals (vendor markup, sheet skin) */
 .famedo #fulfillmentModal .modal-body .form-check{
   display:flex;align-items:center;gap:12px;padding:13px 12px;margin:0;min-height:0;

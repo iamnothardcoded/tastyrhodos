@@ -12,6 +12,13 @@
                 @php
                     $paymentIsSelected = ($field->value == $paymentMethod->code);
                     $paymentIsNotApplicable = !$paymentMethod->isApplicable($order->order_total, $paymentMethod);
+                    // gateway code → FA6 Free icon (self-hosted; brands carries
+                    // the official PayPal glyph). Card outline = generic online.
+                    $famedoPayIcon = match ($paymentMethod->code) {
+                        'cod' => 'fa-solid fa-money-bill-wave',
+                        'paypalexpress' => 'fa-brands fa-paypal',
+                        default => 'fa-regular fa-credit-card',
+                    };
                 @endphp
                 <div
                     @class(['payrow', 'selected' => $paymentIsSelected, 'opacity-50' => $paymentIsNotApplicable])
@@ -31,6 +38,7 @@
                             @disabled($paymentIsNotApplicable)
                             autocomplete="off"
                         />
+                        <div class="payrow__ic" aria-hidden="true"><i class="{{ $famedoPayIcon }}"></i></div>
                         <label
                             class="form-check-label payrow__main"
                             for="payment-{{ $paymentMethod->code }}"

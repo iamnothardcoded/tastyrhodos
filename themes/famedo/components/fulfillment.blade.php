@@ -61,7 +61,15 @@
                     data-famedo-ordertype="{{ $orderType->getCode() }}"
                     data-bs-toggle="modal"
                     data-bs-target="#fulfillmentModal"
-                >{{ $orderType->getLabel() }}</button>
+                >
+                    {{-- mockup pill icons (stroke=currentColor follows pill state color) --}}
+                    @if($orderType->getCode() === 'delivery')
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17h4V5H2v12h3"/><path d="M15 8h4l3 4v5h-3"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></svg>
+                    @else
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2l1.5 4M18 2l-1.5 4M4 6h16l-1.5 12a2 2 0 01-2 1.8H7.5a2 2 0 01-2-1.8z"/></svg>
+                    @endif
+                    {{ $orderType->getLabel() }}
+                </button>
             @endforeach
         </div>
     @endif
