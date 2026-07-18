@@ -318,6 +318,8 @@ $pack = [
 $famedo = [
     // pack gaps (untranslated upstream as of 2026-07-17)
     'text_more_info' => 'Mehr Infos',
+    // shown when the delivery address is outside every delivery area
+    'alert_delivery_area_unavailable' => 'Leider liefern wir nicht an diese Adresse.',
 ];
 
 return array_replace_recursive($pack, $famedo);

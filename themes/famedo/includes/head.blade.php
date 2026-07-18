@@ -22,7 +22,11 @@
 <link rel="preload" href="/vendor/famedo/fonts/plus-jakarta-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/vendor/famedo/fonts/archivo-latin-800.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/vendor/famedo/fontawesome/css/all.min.css">
-@themeStyles
+{{-- @themeStyles, filtered: vendor SearchesNearby unconditionally registers
+     Leaflet CSS from unpkg.com (DSGVO leak). The famedo address flow has no
+     map — strip any third-party CDN stylesheet before emitting. --}}
+{!! preg_replace('#<link[^>]*unpkg\.com[^>]*>\s*#i', '', Assets::getCss()) !!}
+@stack('styles')
 @if (!empty($theme->custom_css))
     <style>{{$theme->custom_css}}</style>
 @endif

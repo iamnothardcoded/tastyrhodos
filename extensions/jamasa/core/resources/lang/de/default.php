@@ -21,6 +21,16 @@ return [
         'amount_missing' => ':amount fehlen noch',
     ],
 
+    'address' => [
+        'street' => 'Straße',
+        'number' => 'Nr.',
+        'postcode' => 'PLZ',
+        'city' => 'Stadt',
+        'number_missing' => 'Bitte gib noch deine Hausnummer an.',
+        'search_again' => 'Neu suchen',
+        'no_suggestions' => 'Keine Vorschläge gefunden',
+    ],
+
     'hero' => [
         'open_until' => 'bis %s',
         'lead_time' => 'ca. %s Min',

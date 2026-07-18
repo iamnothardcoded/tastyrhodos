@@ -22,6 +22,16 @@ return [
         'amount_missing' => ':amount to go',
     ],
 
+    'address' => [
+        'street' => 'Street',
+        'number' => 'No.',
+        'postcode' => 'Postcode',
+        'city' => 'City',
+        'number_missing' => 'Please add your house number.',
+        'search_again' => 'Search again',
+        'no_suggestions' => 'No suggestions found',
+    ],
+
     'hero' => [
         'open_until' => 'until %s',
         'lead_time' => 'approx. %s min',

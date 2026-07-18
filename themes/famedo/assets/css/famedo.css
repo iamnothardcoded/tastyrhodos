@@ -497,6 +497,16 @@ body.famedo{
 .famedo .payrow__sub{font-size:12.5px;color:var(--muted);margin-top:1px}
 .famedo .payrow .form-check-input{width:22px;height:22px;flex:none;border:2px solid var(--line-strong);margin:0}
 .famedo .payrow .form-check-input:checked{background-color:var(--brand);border-color:var(--brand)}
+/* fulfillment sheet: picked-address fields (Straße/Nr + PLZ/Stadt) */
+.famedo .famedo-addr-fields{display:flex;flex-direction:column;gap:8px}
+.famedo .famedo-addr-row{display:flex;gap:8px}
+.famedo .famedo-addr-street{flex:2.5}
+.famedo .famedo-addr-nr{flex:1}
+.famedo .famedo-addr-plz{flex:1}
+.famedo .famedo-addr-city{flex:2.5}
+.famedo .famedo-addr-hint{font-size:12.5px;color:var(--hot);font-weight:600}
+.famedo .famedo-addr-restart{font-size:12.5px;color:var(--muted);text-decoration:underline;cursor:pointer;align-self:flex-start}
+.famedo .famedo-suggestion__sub{font-size:12.5px;color:var(--muted)}
 /* fulfillment sheet option cards */
 .famedo .pickopt{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border:1.5px solid var(--line-strong);border-radius:14px;margin-top:8px;text-align:left;transition:.15s;background:#fff}
 .famedo .pickopt:active{background:var(--surface-2);border-color:var(--brand)}

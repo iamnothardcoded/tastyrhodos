@@ -77,6 +77,68 @@
     lastCount = readCount();
 })();
 
+/* Famedo delivery-address flow (fulfillment sheet). A suggestion click fills
+   Straße/PLZ/Stadt + Hausnummer fields; the composed "Straße Nr, PLZ Stadt"
+   is pushed to Livewire as a DEFERRED set (no round trip) and rides the
+   onConfirm request, which geocodes it verbatim. The customer-typed house
+   number always wins over Nominatim's (OSM answers with the nearest KNOWN
+   building — the customer's input is delivery ground truth). */
+(function () {
+    document.addEventListener('alpine:init', function () {
+        Alpine.data('FamedoAddress', function () {
+            return {
+                addrPicked: false,
+                addrRoad: '',
+                addrNr: '',
+                addrPlz: '',
+                addrCity: '',
+
+                addrPick(road, nr, plz, city) {
+                    var typedEl = document.getElementById('search-query');
+                    var typed = typedEl ? typedEl.value : '';
+                    var m = typed.match(/(\d+\s*[a-zA-Z]?)\s*$/);
+
+                    this.addrRoad = road || '';
+                    this.addrPlz = plz || '';
+                    this.addrCity = city || '';
+                    this.addrNr = (m ? m[1].replace(/\s+/g, '') : '') || nr || '';
+                    this.addrPicked = true;
+                    this.addrSync();
+
+                    if (!this.addrNr) {
+                        var self = this;
+                        this.$nextTick(function () {
+                            if (self.$refs.addrNr) self.$refs.addrNr.focus();
+                        });
+                    }
+                },
+
+                addrSync() {
+                    if (!this.addrPicked) return;
+                    var composed = (this.addrRoad + ' ' + this.addrNr).trim()
+                        + ', ' + (this.addrPlz + ' ' + this.addrCity).trim();
+                    // deferred set: no network now, value rides the next request
+                    this.$wire.set('searchQuery', composed, false);
+                },
+
+                addrReset() {
+                    this.addrPicked = false;
+                    this.addrNr = '';
+                    this.$wire.set('searchQuery', '', false);
+                    this.$nextTick(function () {
+                        var el = document.getElementById('search-query');
+                        if (el) { el.value = ''; el.focus(); }
+                    });
+                },
+
+                get addrBlocked() {
+                    return this.addrPicked && !this.addrNr.trim();
+                },
+            };
+        });
+    });
+})();
+
 /* Swipe-down on a .sheet__grip closes its bottom sheet (modal or offcanvas).
    Tap-to-close is handled separately by Bootstrap via data-bs-dismiss — a
    swipe suppresses the browser click, so both gestures coexist cleanly. */
