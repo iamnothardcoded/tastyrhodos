@@ -21,6 +21,12 @@ return [
         'amount_missing' => ':amount fehlen noch',
     ],
 
+    'hero' => [
+        'open_until' => 'bis %s',
+        'lead_time' => 'ca. %s Min',
+        'min_order' => 'Mindestbestellwert %s',
+    ],
+
     'footer' => [
         'allergens_q' => 'Fragen zu Allergenen & Zusatzstoffen (LMIV)?',
         'allergens_phone' => 'Wir informieren dich gern:',

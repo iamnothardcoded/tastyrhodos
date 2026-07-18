@@ -22,6 +22,12 @@ return [
         'amount_missing' => ':amount to go',
     ],
 
+    'hero' => [
+        'open_until' => 'until %s',
+        'lead_time' => 'approx. %s min',
+        'min_order' => 'Minimum order %s',
+    ],
+
     'footer' => [
         'allergens_q' => 'Questions about allergens & additives (LMIV)?',
         'allergens_phone' => 'We\'re happy to help:',

@@ -6,7 +6,8 @@
     <div @class(['hero__badge', 'closed' => !$schedule->isOpen()])>
         <span class="dot"></span>
         @if ($schedule->isOpen())
-            @lang('igniter.local::default.text_is_opened')
+            {{-- single span: each bare text node would become its own flex item (extra gap) --}}
+            <span>@lang('igniter.local::default.text_is_opened')@if($famedoCloses = $schedule->getCloseTime()) · {!! sprintf(lang('jamasa.core::default.hero.open_until'), make_carbon($famedoCloses)->isoFormat(lang('igniter::system.moment.time_format'))) !!}@endif</span>
         @elseif ($schedule->isOpening())
             {!! sprintf(lang('igniter.local::default.text_opening_time'), make_carbon($schedule->getOpenTime())->isoFormat(lang('igniter::system.moment.day_time_format_short'))) !!}
         @else
@@ -22,8 +23,16 @@
     @if(strlen(strip_tags((string) $locationInfo->description)))
         <p class="hero__cuisine">{{ str_limit(trim(strip_tags((string) $locationInfo->description)), 90) }}</p>
     @endif
+    {{-- short German address: "Straße Nr · PLZ Stadt" (full address in Mehr Infos) --}}
+    @php($famedoAddr = $locationInfo->address)
+    <p class="hero__addr">{{ trim($famedoAddr['address_1'] ?? '') }} · {{ trim(($famedoAddr['postcode'] ?? '').' '.($famedoAddr['city'] ?? '')) }}</p>
     <div class="hero__stats">
-        <span class="stat stat--muted">{{ format_address($locationInfo->address, false) }}</span>
+        @if($famedoLeadTime = \Igniter\Local\Facades\Location::orderLeadTime())
+            <span class="stat"><i class="fa fa-clock" aria-hidden="true"></i> {!! sprintf(lang('jamasa.core::default.hero.lead_time'), $famedoLeadTime) !!}</span>
+        @endif
+        @if(($famedoMinOrder = \Igniter\Local\Facades\Location::minimumOrderTotal()) > 0)
+            <span class="stat stat--muted">{!! sprintf(lang('jamasa.core::default.hero.min_order'), currency_format($famedoMinOrder)) !!}</span>
+        @endif
         <span class="stat">
             <a
                 class="cursor-pointer"
