@@ -109,6 +109,16 @@ class Extension extends BaseExtension
         // order types (redirect loop) or the location (500). See PauseWorkingSchedule.
         Event::listen(WorkingScheduleCreatedEvent::class, [PauseWorkingSchedule::class, 'handle']);
 
+        // Mollie hosted-checkout description: German + pickup code for collection
+        // orders. ONLY $fields['description'] is touched — metadata.order_id is
+        // the webhook/return verification datum and must stay as upstream set it.
+        // fireSystemEvent prepends the gateway instance ($this) to the args.
+        Event::listen('payregister.mollie.extendFields', function ($gateway, &$fields, $order, $data): void {
+            $fields['description'] = $order->isCollectionType()
+                ? sprintf('Abholcode %s · Bestellung #%s', PickupCode::fromHash($order->hash), $order->order_id)
+                : sprintf('Bestellung #%s', $order->order_id);
+        });
+
         // Register the ordering-settings API under the same prefix + Sanctum auth
         // as the rest of the TastyIgniter API. Falls back to hardcoded values so a
         // boot-order/config timing issue can't leave the route unregistered.
