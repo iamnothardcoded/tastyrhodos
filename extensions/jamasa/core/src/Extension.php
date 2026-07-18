@@ -82,6 +82,13 @@ class Extension extends BaseExtension
         config([
             'igniter-geocoder.providers.nominatim.region' => 'DE',
             'igniter-geocoder.providers.nominatim.locale' => 'de',
+            // famedo is Nominatim-only (DSGVO, no Google key). The shipped
+            // default is "chain" (google → nominatim) and Geocoder::driver()
+            // reads THIS config, not the default_geocoder DB setting — with no
+            // API key, Google throws 403 inside the chain and (ChainProvider
+            // has no per-provider try/catch) kills the checkout address
+            // autocomplete before Nominatim is ever asked.
+            'igniter-geocoder.default' => 'nominatim',
         ]);
 
         // Fixed Nominatim provider (empty-title suggestions for plain addresses
