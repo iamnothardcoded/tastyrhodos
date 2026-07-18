@@ -123,6 +123,26 @@ class Extension extends BaseExtension
             $fields['description'] = sprintf('Bestellung #%s', PickupCode::fromHash($order->hash));
         });
 
+        // PayPal parity: upstream sends NO description at all — add the same
+        // obfuscated reference to the purchase unit (shows on the PayPal
+        // approval page / transaction details). reference_id (hash) and
+        // custom_id (internal order id) stay untouched.
+        Event::listen('payregister.paypalexpress.extendFields', function ($gateway, &$fields, $order, $data): void {
+            $fields['purchase_units'][0]['description'] = sprintf('Bestellung #%s', PickupCode::fromHash($order->hash));
+        });
+
+        // Customer mails: expose the pickup code as a plain mail-data variable.
+        // The @pickupCode blade directive CANNOT be used in mail templates (the
+        // core TemplateSandbox truncates on non-whitelisted directives), but a
+        // data variable is always safe — jamasa's customer templates
+        // (igniter-cart/mail/order + order_update) consume it instead of
+        // order_number. Admin alert mails keep the internal id.
+        \Igniter\Cart\Models\Order::extend(function (\Igniter\Cart\Models\Order $model): void {
+            $model->bindEvent('model.mailGetData', function (array &$data) use ($model): void {
+                $data['pickup_code'] = PickupCode::fromHash($model->hash);
+            });
+        });
+
         // Register the ordering-settings API under the same prefix + Sanctum auth
         // as the rest of the TastyIgniter API. Falls back to hardcoded values so a
         // boot-order/config timing issue can't leave the route unregistered.

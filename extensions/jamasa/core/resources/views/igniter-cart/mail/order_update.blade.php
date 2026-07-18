@@ -1,8 +1,8 @@
-subject = "@lang('jamasa.core::default.mail.order_update.subject', ['code' => $order_number], $mail_locale)"
+subject = "@lang('jamasa.core::default.mail.order_update.subject', ['code' => $pickup_code], $mail_locale)"
 ==
 @lang('jamasa.core::default.mail.order_update.heading', [], $mail_locale)
 
-@lang('jamasa.core::default.mail.order_update.text_updated', ['code' => $order_number], $mail_locale)
+@lang('jamasa.core::default.mail.order_update.text_updated', ['code' => $pickup_code], $mail_locale)
 {{ $status_name }}
 
 @lang('jamasa.core::default.mail.order_update.text_comments', [], $mail_locale)
@@ -13,7 +13,7 @@ subject = "@lang('jamasa.core::default.mail.order_update.subject', ['code' => $o
 ==
 @lang('jamasa.core::default.mail.order_update.greeting', ['name' => $first_name.' '.$last_name], $mail_locale)
 
-@lang('jamasa.core::default.mail.order_update.html_updated', ['code' => $order_number], $mail_locale) <br>
+@lang('jamasa.core::default.mail.order_update.html_updated', ['code' => $pickup_code], $mail_locale) <br>
 **{{ $status_name }}**
 
 @lang('jamasa.core::default.mail.order_update.text_comments', [], $mail_locale) <br>

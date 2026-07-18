@@ -1,4 +1,4 @@
-subject = "@lang('jamasa.core::default.mail.order.subject', ['site' => $site_name, 'code' => $order_number], $mail_locale)"
+subject = "@lang('jamasa.core::default.mail.order.subject', ['site' => $site_name, 'code' => $pickup_code], $mail_locale)"
 ==
 @lang('jamasa.core::default.mail.order.heading', [], $mail_locale)
 
@@ -9,7 +9,7 @@ subject = "@lang('jamasa.core::default.mail.order.subject', ['site' => $site_nam
 @lang('jamasa.core::default.mail.order.text_view_url', [], $mail_locale)
 {{$order_view_url}}
 
-@lang('jamasa.core::default.mail.order.text_order_number', ['code' => $order_number], $mail_locale)
+@lang('jamasa.core::default.mail.order.text_order_number', ['code' => $pickup_code], $mail_locale)
 
 @lang('jamasa.core::default.mail.order.text_order_type', ['type' => $order_type], $mail_locale)
 
@@ -44,7 +44,7 @@ subject = "@lang('jamasa.core::default.mail.order.subject', ['site' => $site_nam
 
 ## @lang('jamasa.core::default.mail.order.heading', [], $mail_locale)
 
-@lang('jamasa.core::default.mail.order.html_received', ['type' => $order_type, 'code' => $order_number], $mail_locale)
+@lang('jamasa.core::default.mail.order.html_received', ['type' => $order_type, 'code' => $pickup_code], $mail_locale)
 
 @lang('jamasa.core::default.mail.order.link_progress', ['url' => $order_view_url], $mail_locale)
 
