@@ -156,6 +156,7 @@ class NominatimProvider extends BaseNominatimProvider
                     ->title(trim(($road ?? ($p->name ?? '')).' '.($p->housenumber ?? '')))
                     ->description(trim(($p->postcode ?? '').' '.($p->city ?? '')))
                     ->provider('nominatim')
+                    ->withData('osmKey', $p->osm_key ?? null)
                     ->withData('latitude', $pLat)
                     ->withData('longitude', $pLng)
                     ->withData('road', $road)
@@ -165,6 +166,12 @@ class NominatimProvider extends BaseNominatimProvider
                     ->withData('suburb', $p->district ?? null);
             })
             ->filter(fn(Place $place) => filled($place->getData('road')))
+            // POIs whose NAME matched the query masquerade as their street
+            // ("Viktoria-Gymnasium" surfaced as Kurfürstenplatz, Essen): with
+            // no digit in the query only real streets qualify; a typed number
+            // additionally admits address points carrying a house number
+            ->filter(fn(Place $place): bool => $place->getData('osmKey') === 'highway'
+                || (preg_match('/\d/', $text) && filled($place->getData('houseNumber'))))
             ->filter(function(Place $place) use ($lat, $lng): bool {
                 if (!$lat || !$lng) {
                     return true;
