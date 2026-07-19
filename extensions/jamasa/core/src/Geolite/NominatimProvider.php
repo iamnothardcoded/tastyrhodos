@@ -76,16 +76,65 @@ class NominatimProvider extends BaseNominatimProvider
      *   way-segments and Nominatim returns every segment — customers saw three
      *   near-identical "Cottenburgstraße" rows.
      */
+    /**
+     * Suggestions are only useful near the restaurant (a Dortmund customer
+     * never needs Berlin streets): viewbox biases Nominatim toward the
+     * tenant's area, a haversine POST-filter guarantees the radius (bounded=1
+     * is flaky with free-text street queries), and an empty first pass is
+     * retried with the tenant's city appended — bare common street names
+     * ("Hauptstraße") rank terribly in Nominatim's free-text search without
+     * context. The delivery-area check at confirm stays the real gate — this
+     * is suggestion hygiene, not enforcement.
+     */
+    private const SUGGESTION_RADIUS_KM = 25;
+
     #[Override]
     public function placesAutocomplete(GeoQueryInterface $query): Collection
     {
+        // current() needs the storefront session; fall back to the default
+        // location so CLI/queue contexts behave identically
+        $famedoLocation = \Igniter\Local\Facades\Location::current()
+            ?? \Igniter\Local\Models\Location::getDefault();
+        $coordinates = $famedoLocation?->getCoordinates();
+        $lat = $coordinates?->getLatitude() ?: null;
+        $lng = $coordinates?->getLongitude() ?: null;
+
+        $places = $this->famedoFetchPlaces($query, $query->getText(), $lat, $lng);
+
+        if ($places->isEmpty()
+            && ($city = array_get($famedoLocation?->getAddress() ?? [], 'city'))
+            && !str_contains(mb_strtolower($query->getText()), mb_strtolower((string)$city))
+        ) {
+            $places = $this->famedoFetchPlaces($query, $query->getText().', '.$city, $lat, $lng);
+        }
+
+        return $places;
+    }
+
+    protected function famedoFetchPlaces(GeoQueryInterface $query, string $text, ?float $lat, ?float $lng): Collection
+    {
         $endpoint = array_get($this->config, 'endpoints.places');
         $url = sprintf($endpoint.'search?q=%s&format=json&addressdetails=1&limit=%d',
-            rawurlencode($query->getText()),
+            rawurlencode($text),
             $query->getLimit(),
         );
 
-        $result = $this->cacheCallback($url, fn(): array => $this->requestPlacesUrl($url, $query));
+        if ($lat && $lng) {
+            $dLat = self::SUGGESTION_RADIUS_KM / 111.32;
+            $dLng = self::SUGGESTION_RADIUS_KM / (111.32 * max(cos(deg2rad($lat)), 0.01));
+            $url .= sprintf('&viewbox=%F,%F,%F,%F', $lng - $dLng, $lat + $dLat, $lng + $dLng, $lat - $dLat);
+        }
+
+        try {
+            $result = $this->cacheCallback($url, fn(): array => $this->requestPlacesUrl($url, $query));
+        } catch (\Throwable $throwable) {
+            // vendor requestPlacesUrl throws on EMPTY responses — a normal
+            // outcome here; degrade to "no suggestions", never an error toast
+            $this->log(sprintf('Provider "%s" places suggestion lookup empty/failed: %s',
+                $this->getName(), $throwable->getMessage()));
+
+            return new Collection;
+        }
 
         return collect($result)
             ->map(function($item) {
@@ -108,9 +157,28 @@ class NominatimProvider extends BaseNominatimProvider
                     ->withData('suburb', $addr['suburb'] ?? null);
             })
             ->filter(fn(Place $place) => filled($place->getData('road')))
+            ->filter(function(Place $place) use ($lat, $lng): bool {
+                if (!$lat || !$lng) {
+                    return true;
+                }
+                $pLat = (float)$place->getData('latitude');
+                $pLng = (float)$place->getData('longitude');
+
+                return $pLat && $pLng
+                    && $this->famedoDistanceKm($lat, $lng, $pLat, $pLng) <= self::SUGGESTION_RADIUS_KM;
+            })
             ->unique(fn(Place $place): string => mb_strtolower(
                 $place->getData('road').'|'.$place->getData('postcode').'|'.$place->getData('city'),
             ))
             ->values();
+    }
+
+    protected function famedoDistanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 6371 * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }
