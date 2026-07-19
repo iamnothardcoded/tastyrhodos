@@ -76,7 +76,7 @@ class NominatimProvider extends BaseNominatimProvider
      *
      * Our layer on top stays minimal and deterministic:
      * - structured parts (road/houseNumber/postcode/city) into suggestion data
-     * - drop hits without a street; hard radius filter (SUGGESTION_RADIUS_KM)
+     * - drop hits without a street; hard radius filter (per-tenant, famedoSuggestionRadiusKm)
      * - dedupe by road|nr|postcode|city (way-segments come back per type)
      * - number-stripped retry: a typed house number OSM doesn't know returns
      *   ZERO hits — retry with the number removed so the street still
@@ -85,11 +85,23 @@ class NominatimProvider extends BaseNominatimProvider
      * Geocode VERIFICATION (onConfirm / checkout) stays on Nominatim — that
      * path works and carries our house-number injection above.
      */
-    // must stay comfortably LARGER than any tenant's delivery area (the zone
-    // check at confirm is the real gate); 10km ≈ 2x a typical food-delivery
-    // radius — tighter shows fewer wrong-city namesakes to mis-pick.
-    // Future: derive per tenant from the configured delivery areas + margin.
-    private const SUGGESTION_RADIUS_KM = 10;
+    /**
+     * Suggestion radius derives PER TENANT from the configured delivery
+     * areas: farthest reach of any area (circle: restaurant→center + radius;
+     * polygon: farthest vertex) × BUFFER, clamped to [FLOOR, CAP] km.
+     * Buffer + floor exist because street search points are way-segment
+     * centers (can sit a few hundred meters from the buildings) and because
+     * hiding a deliverable street is worse than showing a borderline one —
+     * the delivery-area check at confirm stays the real gate. Tenants with
+     * no usable area geometry fall back to FALLBACK km.
+     */
+    private const SUGGESTION_RADIUS_BUFFER = 1.25;
+
+    private const SUGGESTION_RADIUS_FLOOR_KM = 5.0;
+
+    private const SUGGESTION_RADIUS_CAP_KM = 30.0;
+
+    private const SUGGESTION_RADIUS_FALLBACK_KM = 10.0;
 
     private const SUGGESTION_SHOW_LIMIT = 6;
 
@@ -106,14 +118,16 @@ class NominatimProvider extends BaseNominatimProvider
         $lat = $coordinates?->getLatitude() ?: null;
         $lng = $coordinates?->getLongitude() ?: null;
 
+        $radiusKm = $this->famedoSuggestionRadiusKm($famedoLocation, $lat, $lng);
+
         $text = trim($query->getText());
-        $places = $this->famedoFetchPhoton($text, $lat, $lng);
+        $places = $this->famedoFetchPhoton($text, $lat, $lng, $radiusKm);
 
         // typed-but-unmapped house number → zero hits; suggest the street
         if ($places->isEmpty()
             && preg_match('/^(.*[\pL.])\s+\d+\s*[a-zA-Z]?\s*$/u', $text, $m)
         ) {
-            $places = $this->famedoFetchPhoton(trim($m[1]), $lat, $lng);
+            $places = $this->famedoFetchPhoton(trim($m[1]), $lat, $lng, $radiusKm);
         }
 
         return $places
@@ -125,7 +139,35 @@ class NominatimProvider extends BaseNominatimProvider
             ->values();
     }
 
-    protected function famedoFetchPhoton(string $text, ?float $lat, ?float $lng): Collection
+    protected function famedoSuggestionRadiusKm($location, ?float $lat, ?float $lng): float
+    {
+        if (!$location || !$lat || !$lng) {
+            return self::SUGGESTION_RADIUS_FALLBACK_KM;
+        }
+
+        $extentKm = 0.0;
+        foreach ($location->delivery_areas ?? [] as $area) {
+            if ($area->isPolygonBoundary()) {
+                foreach ($area->vertices as $vertex) {
+                    if (isset($vertex->lat, $vertex->lng)) {
+                        $extentKm = max($extentKm, $this->famedoDistanceKm($lat, $lng, (float)$vertex->lat, (float)$vertex->lng));
+                    }
+                }
+            } elseif (($circle = $area->circle) && isset($circle->lat, $circle->lng, $circle->radius)) {
+                // circle radius is stored in METERS
+                $extentKm = max($extentKm,
+                    $this->famedoDistanceKm($lat, $lng, (float)$circle->lat, (float)$circle->lng) + (float)$circle->radius / 1000);
+            }
+        }
+
+        if ($extentKm <= 0) {
+            return self::SUGGESTION_RADIUS_FALLBACK_KM;
+        }
+
+        return min(max($extentKm * self::SUGGESTION_RADIUS_BUFFER, self::SUGGESTION_RADIUS_FLOOR_KM), self::SUGGESTION_RADIUS_CAP_KM);
+    }
+
+    protected function famedoFetchPhoton(string $text, ?float $lat, ?float $lng, float $radiusKm = self::SUGGESTION_RADIUS_FALLBACK_KM): Collection
     {
         // limit=50: Photon assembles its candidate pool by IMPORTANCE first
         // and applies the proximity bias when ranking — with a small limit a
@@ -191,7 +233,7 @@ class NominatimProvider extends BaseNominatimProvider
             // additionally admits address points carrying a house number
             ->filter(fn(Place $place): bool => $place->getData('osmKey') === 'highway'
                 || (preg_match('/\d/', $text) && filled($place->getData('houseNumber'))))
-            ->filter(function(Place $place) use ($lat, $lng): bool {
+            ->filter(function(Place $place) use ($lat, $lng, $radiusKm): bool {
                 if (!$lat || !$lng) {
                     return true;
                 }
@@ -199,7 +241,7 @@ class NominatimProvider extends BaseNominatimProvider
                 $pLng = (float)$place->getData('longitude');
 
                 return $pLat && $pLng
-                    && $this->famedoDistanceKm($lat, $lng, $pLat, $pLng) <= self::SUGGESTION_RADIUS_KM;
+                    && $this->famedoDistanceKm($lat, $lng, $pLat, $pLng) <= $radiusKm;
             })
             ->values();
     }
