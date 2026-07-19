@@ -85,7 +85,11 @@ class NominatimProvider extends BaseNominatimProvider
      * Geocode VERIFICATION (onConfirm / checkout) stays on Nominatim — that
      * path works and carries our house-number injection above.
      */
-    private const SUGGESTION_RADIUS_KM = 25;
+    // must stay comfortably LARGER than any tenant's delivery area (the zone
+    // check at confirm is the real gate); 10km ≈ 2x a typical food-delivery
+    // radius — tighter shows fewer wrong-city namesakes to mis-pick.
+    // Future: derive per tenant from the configured delivery areas + margin.
+    private const SUGGESTION_RADIUS_KM = 10;
 
     private const SUGGESTION_SHOW_LIMIT = 6;
 
@@ -143,7 +147,14 @@ class NominatimProvider extends BaseNominatimProvider
                     'headers' => ['User-Agent' => 'famedo-storefront (kontakt: iam@nothardcoded.io)'],
                 ]);
 
-                return json_decode((string)$response->getBody())->features ?? [];
+                $data = json_decode((string)$response->getBody());
+                // throw on invalid payloads (throttle/error pages) so they are
+                // NEVER cached — a poisoned 30-day cache entry once made a
+                // street "not exist"; a valid empty features list stays cacheable
+                throw_unless(isset($data->features) && is_array($data->features),
+                    new \RuntimeException('invalid photon response'));
+
+                return $data->features;
             });
         } catch (\Throwable $throwable) {
             // a failed lookup degrades to "no suggestions", never an error toast
