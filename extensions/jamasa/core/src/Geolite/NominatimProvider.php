@@ -123,7 +123,15 @@ class NominatimProvider extends BaseNominatimProvider
 
     protected function famedoFetchPhoton(string $text, ?float $lat, ?float $lng): Collection
     {
-        $url = self::PHOTON_ENDPOINT.'?q='.rawurlencode($text).'&limit=12&lang=de';
+        // limit=50: Photon assembles its candidate pool by IMPORTANCE first
+        // and applies the proximity bias when ranking — with a small limit a
+        // residential street in the tenant's town loses every pool slot to
+        // big-city namesakes (repro: "borns" returned only Dortmund at
+        // limit=12, Castrop first at 50). layer restricts at the source:
+        // streets only — plus address points when a house number was typed
+        // (villages/farms named "Born" were eating the pool otherwise).
+        $layers = preg_match('/\d/', $text) ? '&layer=house&layer=street' : '&layer=street';
+        $url = self::PHOTON_ENDPOINT.'?q='.rawurlencode($text).'&limit=50&lang=de'.$layers;
         if ($lat && $lng) {
             $url .= sprintf('&lat=%F&lon=%F', $lat, $lng);
         }
