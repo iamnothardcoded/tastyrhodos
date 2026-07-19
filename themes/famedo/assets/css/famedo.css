@@ -508,6 +508,9 @@ body.famedo{
 .famedo .famedo-addr-restart{font-size:12.5px;color:var(--muted);text-decoration:underline;cursor:pointer;align-self:flex-start}
 .famedo .famedo-suggestion__sub{font-size:12.5px;color:var(--muted)}
 .famedo .famedo-addr-searching{padding:10px 4px;font-size:13px;color:var(--muted)}
+/* OSM attribution: dark grey, link stays a link */
+.famedo .famedo-osm-credit{color:#565B63}
+.famedo .famedo-osm-credit a{color:#565B63;text-decoration:underline;text-underline-offset:2px}
 /* fulfillment sheet option cards */
 .famedo .pickopt{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border:1.5px solid var(--line-strong);border-radius:14px;margin-top:8px;text-align:left;transition:.15s;background:#fff}
 .famedo .pickopt:active{background:var(--surface-2);border-color:var(--brand)}

@@ -24,7 +24,8 @@
         <div class="list-group-item text-center">@lang('jamasa.core::default.address.no_suggestions')</div>
     @endforelse
 </div>
-<div class="p-1 text-end border rounded rounded-top-0">
+{{-- ODbL attribution — required wherever OSM data is shown; stays a link --}}
+<div class="p-1 text-end border rounded rounded-top-0 famedo-osm-credit">
     <small>
         Powered by
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
