@@ -101,7 +101,11 @@ class NominatimProvider extends BaseNominatimProvider
 
         $places = $this->famedoFetchPlaces($query, $query->getText(), $lat, $lng);
 
+        // retry only for plausibly COMPLETE street names — half-typed
+        // fragments while the user is still typing must not pay a second
+        // Nominatim round trip (they queue up and feel like seconds of lag)
         if ($places->isEmpty()
+            && mb_strlen(trim($query->getText())) >= 6
             && ($city = array_get($famedoLocation?->getAddress() ?? [], 'city'))
             && !str_contains(mb_strtolower($query->getText()), mb_strtolower((string)$city))
         ) {

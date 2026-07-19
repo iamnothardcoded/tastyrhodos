@@ -30,6 +30,7 @@ return [
         'number_missing' => 'Please add your house number.',
         'search_again' => 'Search again',
         'no_suggestions' => 'No suggestions found',
+        'searching' => 'Searching addresses …',
     ],
 
     'hero' => [

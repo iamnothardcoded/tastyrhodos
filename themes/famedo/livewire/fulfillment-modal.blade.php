@@ -135,10 +135,17 @@
                                                 type="button"
                                                 data-control="user-position"
                                                 class="btn shadow-none"
-                                            ><i class="fa fa-location-arrow fs-5 align-bottom"></i></button>
+                                            ><i class="fa fa-location-arrow fs-5 align-bottom" wire:loading.class="d-none" wire:target="searchQuery"></i><i class="fa fa-spinner fa-spin fs-5 align-bottom d-none" wire:loading.class.remove="d-none" wire:target="searchQuery"></i></button>
+                                        </div>
+                                        {{-- while a lookup runs: show progress, hide the stale list
+                                             (otherwise 1-4s of dead silence — felt broken) --}}
+                                        <div class="famedo-addr-searching d-none" wire:loading.class.remove="d-none" wire:target="searchQuery">
+                                            @lang('jamasa.core::default.address.searching')
                                         </div>
                                         @if($isSearching && $searchAutocompleteEnabled)
-                                            @include('igniter-orange::includes.local.autocomplete-suggestions')
+                                            <div wire:loading.class="d-none" wire:target="searchQuery">
+                                                @include('igniter-orange::includes.local.autocomplete-suggestions')
+                                            </div>
                                         @endif
                                     </div>
                                     {{-- picked state: Straße/PLZ/Stadt prefilled + required Hausnummer --}}
