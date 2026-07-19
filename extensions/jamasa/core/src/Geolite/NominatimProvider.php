@@ -88,6 +88,16 @@ class NominatimProvider extends BaseNominatimProvider
      */
     private const SUGGESTION_RADIUS_KM = 25;
 
+    /**
+     * Ask Nominatim for MANY candidates: it ranks by global "importance"
+     * (big-city streets first), so with the default limit of 5 a small local
+     * street never even reaches us — the distance filter can only keep what
+     * was returned. One request either way; we filter + sort + cap ourselves.
+     */
+    private const SUGGESTION_FETCH_LIMIT = 30;
+
+    private const SUGGESTION_SHOW_LIMIT = 6;
+
     #[Override]
     public function placesAutocomplete(GeoQueryInterface $query): Collection
     {
@@ -101,18 +111,39 @@ class NominatimProvider extends BaseNominatimProvider
 
         $places = $this->famedoFetchPlaces($query, $query->getText(), $lat, $lng);
 
-        // retry only for plausibly COMPLETE street names — half-typed
-        // fragments while the user is still typing must not pay a second
-        // Nominatim round trip (they queue up and feel like seconds of lag)
-        if ($places->isEmpty()
+        // second, city-scoped fetch when the first pass found nothing TRULY
+        // local — Nominatim's importance ranking favors big-city streets, so
+        // the same street name in the tenant's own town often doesn't make the
+        // result list at all without city context. Gated to plausibly complete
+        // street names: half-typed fragments must not pay a second round trip.
+        $nearest = $places->min(fn(Place $place) => (float)($place->getData('distanceKm') ?? INF));
+        if (($places->count() < 2 || $nearest > 5)
             && mb_strlen(trim($query->getText())) >= 6
             && ($city = array_get($famedoLocation?->getAddress() ?? [], 'city'))
             && !str_contains(mb_strtolower($query->getText()), mb_strtolower((string)$city))
         ) {
-            $places = $this->famedoFetchPlaces($query, $query->getText().', '.$city, $lat, $lng);
+            $places = $places->concat(
+                $this->famedoFetchPlaces($query, $query->getText().', '.$city, $lat, $lng),
+            );
         }
 
-        return $places;
+        // rank: streets whose name actually starts with what was typed first,
+        // then by distance — proximity alone would put a fuzzy side-match
+        // nearer the restaurant above the street the customer meant
+        $typedStreet = mb_strtolower(strtok(trim($query->getText()), " ,"));
+
+        return $places
+            ->unique(fn(Place $place): string => mb_strtolower(
+                $place->getData('road').'|'.$place->getData('postcode').'|'.$place->getData('city'),
+            ))
+            ->sortBy(function(Place $place) use ($typedStreet): float {
+                $prefixMiss = $typedStreet !== '' && $typedStreet !== false
+                    && str_starts_with(mb_strtolower((string)$place->getData('road')), $typedStreet) ? 0 : 1;
+
+                return $prefixMiss * 1000 + (float)($place->getData('distanceKm') ?? 999);
+            })
+            ->take(self::SUGGESTION_SHOW_LIMIT)
+            ->values();
     }
 
     protected function famedoFetchPlaces(GeoQueryInterface $query, string $text, ?float $lat, ?float $lng): Collection
@@ -120,7 +151,7 @@ class NominatimProvider extends BaseNominatimProvider
         $endpoint = array_get($this->config, 'endpoints.places');
         $url = sprintf($endpoint.'search?q=%s&format=json&addressdetails=1&limit=%d',
             rawurlencode($text),
-            $query->getLimit(),
+            max($query->getLimit(), self::SUGGESTION_FETCH_LIMIT),
         );
 
         if ($lat && $lng) {
@@ -161,19 +192,18 @@ class NominatimProvider extends BaseNominatimProvider
                     ->withData('suburb', $addr['suburb'] ?? null);
             })
             ->filter(fn(Place $place) => filled($place->getData('road')))
-            ->filter(function(Place $place) use ($lat, $lng): bool {
-                if (!$lat || !$lng) {
-                    return true;
+            ->map(function(Place $place) use ($lat, $lng): Place {
+                if ($lat && $lng
+                    && ($pLat = (float)$place->getData('latitude'))
+                    && ($pLng = (float)$place->getData('longitude'))
+                ) {
+                    $place->withData('distanceKm', $this->famedoDistanceKm($lat, $lng, $pLat, $pLng));
                 }
-                $pLat = (float)$place->getData('latitude');
-                $pLng = (float)$place->getData('longitude');
 
-                return $pLat && $pLng
-                    && $this->famedoDistanceKm($lat, $lng, $pLat, $pLng) <= self::SUGGESTION_RADIUS_KM;
+                return $place;
             })
-            ->unique(fn(Place $place): string => mb_strtolower(
-                $place->getData('road').'|'.$place->getData('postcode').'|'.$place->getData('city'),
-            ))
+            ->filter(fn(Place $place): bool => !$lat || !$lng
+                || (float)($place->getData('distanceKm') ?? INF) <= self::SUGGESTION_RADIUS_KM)
             ->values();
     }
 
