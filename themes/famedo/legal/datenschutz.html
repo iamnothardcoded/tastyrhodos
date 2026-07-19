@@ -1,0 +1,95 @@
+<!--
+  famedo Vorlage: Datenschutzerklärung für Tenant-Bestellseiten (Quelle: Designer-
+  Draft datenschutz-bestellseite-vorlage(1).html, 2026-07-19). BODY-FRAGMENT ONLY —
+  wird als Page-Content in die `pages`-Tabelle geseedet, das famedo _layouts/static
+  rendert Titel/Header/Footer. Alle <span class="todo">…</span> pro Restaurant
+  ausfüllen (Styling in famedo.css):
+    · Restaurantname, Rechtsform, Anschrift, Kontakt (= Verantwortlicher)
+    · Zuständige Datenschutz-Aufsichtsbehörde (Bundesland des Restaurants)
+    · Zahlarten-Liste an tatsächliche Konfiguration anpassen
+    · Stand-Datum
+  Vor dem ersten Einsatz juristisch prüfen lassen.
+  Abschnitt 6 (Zahlungsabwicklung) ggf. anpassen, sobald die Mollie-Konstruktion
+  final ist (eigenes Konto des Gastronomen vs. Abwicklung über famedo).
+  ABWEICHUNG VOM DESIGNER-DRAFT: Abschnitt 10 sprach von Google Fonts — famedo
+  hostet alle Schriften SELBST (DSGVO-Entscheidung, famedo.css @font-face auf
+  /vendor/famedo/fonts/). Abschnitt 10 hier auf „lokal gehostet“ korrigiert.
+-->
+<p class="sub">für die Online-Bestellseite von <span class="todo">[Name des Restaurants]</span></p>
+
+<h2>1. Verantwortlicher</h2>
+<p>Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) für die Verarbeitung personenbezogener Daten auf dieser Bestellseite ist:</p>
+<p><span class="todo">[Name des Restaurants / Rechtsform, z. B. „Rhodos Grill, Inhaber Max Mustermann“]</span><br>
+<span class="todo">[Straße Hausnummer]</span><br>
+<span class="todo">[PLZ Ort]</span><br>
+Telefon: <span class="todo">[Telefonnummer]</span><br>
+E-Mail: <span class="todo">[E-Mail-Adresse]</span></p>
+<p>Bei Fragen zum Datenschutz erreichen Sie uns über die genannten Kontaktdaten.</p>
+
+<h2>2. Technischer Betreiber der Bestellseite (Auftragsverarbeiter)</h2>
+<p>Diese Bestellseite wird technisch über das Bestellsystem „famedo“ der Polykatastima GmbH, Cottenburgstraße 2, 44575 Castrop-Rauxel, bereitgestellt und betrieben. Die Polykatastima GmbH verarbeitet Ihre Daten dabei ausschließlich in unserem Auftrag und nach unserer Weisung auf Grundlage eines Vertrags über Auftragsverarbeitung nach Art. 28 DSGVO. Gleiches gilt für den von ihr eingesetzten Hosting-Dienstleister.</p>
+
+<h2>3. Allgemeines zur Datenverarbeitung</h2>
+<p>Wir verarbeiten personenbezogene Daten nur, soweit dies für die Entgegennahme und Abwicklung Ihrer Bestellung, den Betrieb der Bestellseite und die Erfüllung gesetzlicher Pflichten erforderlich ist. Es findet kein Tracking Ihres Nutzungsverhaltens statt, es werden keine Analyse- oder Werbedienste eingesetzt und Ihre Daten werden nicht zu Werbezwecken an Dritte weitergegeben.</p>
+<p>Die Bereitstellung Ihrer Daten ist freiwillig. Ohne die als Pflichtfelder gekennzeichneten Angaben können wir Ihre Bestellung jedoch nicht entgegennehmen und ausführen.</p>
+
+<h2>4. Bestellvorgang</h2>
+<p>Wenn Sie über diese Seite eine Bestellung aufgeben, verarbeiten wir die folgenden Daten:</p>
+<ul>
+  <li>Vor- und Nachname</li>
+  <li>Telefonnummer (für Rückfragen zur Bestellung)</li>
+  <li>E-Mail-Adresse (für die Bestellbestätigung)</li>
+  <li>bei Lieferung: Lieferadresse und ggf. Hinweise zur Zustellung (z. B. Etage, Klingel)</li>
+  <li>Inhalt der Bestellung (gewählte Gerichte, Extras, Anmerkungen), gewählte Zahlungsart, Bestellzeitpunkt und Preis</li>
+</ul>
+<p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des Kaufvertrags bzw. Durchführung vorvertraglicher Maßnahmen). Die Übermittlung der Bestellung an unseren Betrieb erfolgt automatisiert über das Bestellsystem (u. a. Bondruck im Restaurant).</p>
+
+<h2>5. Bestellbestätigung und Statusnachrichten</h2>
+<p>Zur Abwicklung Ihrer Bestellung senden wir Ihnen transaktionsbezogene Nachrichten (z. B. Bestellbestätigung, ggf. Informationen zum Bestell- oder Lieferstatus) an die von Ihnen angegebene E-Mail-Adresse bzw. Telefonnummer. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Werbliche Nachrichten erhalten Sie von uns nur, wenn Sie hierin gesondert eingewilligt haben (Art. 6 Abs. 1 lit. a DSGVO); eine solche Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen.</p>
+
+<h2>6. Zahlungsabwicklung</h2>
+<p>Für Online-Zahlungen stehen Ihnen je nach Konfiguration verschiedene Zahlungsarten zur Verfügung (z. B. <span class="todo">[Kartenzahlung, PayPal, Apple Pay/Google Pay – Liste an die tatsächlich aktivierten Zahlarten anpassen]</span>); alternativ ist Barzahlung bei Lieferung oder Abholung möglich.</p>
+<p>Bei Online-Zahlung werden Ihre Zahlungsdaten direkt vom jeweiligen Zahlungsdienstleister erhoben und verarbeitet; wir selbst erhalten keine vollständigen Zahlungsdaten (z. B. keine vollständigen Kartennummern), sondern lediglich eine Bestätigung über den Zahlungseingang. Die Zahlungsabwicklung erfolgt über <span class="todo">[Zahlungsdienstleister eintragen, z. B. „Mollie B.V., Keizersgracht 126, 1015 CW Amsterdam, Niederlande“]</span> sowie ggf. den von Ihnen gewählten Anbieter (z. B. PayPal (Europe) S.à r.l. et Cie, S.C.A., Luxemburg).</p>
+<p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung). Für die Verarbeitung durch die Zahlungsdienstleister gelten deren Datenschutzerklärungen, z. B. <a href="https://www.mollie.com/de/privacy" target="_blank" rel="noopener">mollie.com/de/privacy</a> und <a href="https://www.paypal.com/de/legalhub/privacy-full" target="_blank" rel="noopener">paypal.com – Datenschutz</a>.</p>
+
+<h2>7. Adressvorschläge bei der Eingabe (Photon / OpenStreetMap)</h2>
+<p>Um Ihnen die Eingabe der Lieferadresse zu erleichtern, zeigt das Adressfeld während des Tippens Adressvorschläge an. Dazu werden die von Ihnen eingegebenen Zeichen zusammen mit Ihrer IP-Adresse an den Geokodierungsdienst Photon (komoot GmbH, Deutschland) übermittelt, der auf Daten von OpenStreetMap basiert. Die Übermittlung erfolgt erst, wenn Sie aktiv in das Adressfeld tippen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer komfortablen und fehlerarmen Adresseingabe).</p>
+
+<h2>8. Wiedererkennung als Stammkunde</h2>
+<p>Damit Sie bei einer erneuten Bestellung Ihre Angaben nicht noch einmal eingeben müssen, können Ihre Bestelldaten (Name, Kontaktdaten, Lieferadresse) auf Ihrem Endgerät gespeichert und beim nächsten Besuch vorausgefüllt werden. Diese Speicherung ist für die von Ihnen gewünschte Komfortfunktion erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG); die zugehörige Datenverarbeitung beruht auf Art. 6 Abs. 1 lit. b und f DSGVO. Sie können die gespeicherten Daten jederzeit selbst löschen, indem Sie die Website-Daten dieser Seite in Ihrem Browser löschen.</p>
+
+<h2>9. Cookies und Tracking</h2>
+<p>Diese Bestellseite verwendet keine Cookies zu Analyse-, Marketing- oder Tracking-Zwecken und setzt keine Analyse- oder Werbedienste ein. Eingesetzt werden ausschließlich technisch notwendige Speichervorgänge, die für den Bestellvorgang (z. B. Warenkorb während der Sitzung) und die unter Ziffer 8 beschriebene Komfortfunktion erforderlich sind (§ 25 Abs. 2 TDDDG). Ein Cookie-Banner ist daher nicht erforderlich.</p>
+
+<h2>10. Schriftarten (lokal gehostet)</h2>
+<p>Zur einheitlichen Darstellung nutzt diese Seite Schriftarten, die lokal auf dem Server der Bestellseite gespeichert sind. Beim Aufruf der Seite werden die Schriftdateien direkt von unserem Server geladen; eine Verbindung zu Servern von Drittanbietern (z. B. Google Fonts) findet dabei nicht statt und es werden keine Daten an Dritte übermittelt.</p>
+
+<h2>11. Hosting und Server-Logfiles</h2>
+<p>Beim Aufruf der Bestellseite werden durch den Server automatisch Informationen in Server-Logfiles gespeichert, die Ihr Browser übermittelt: IP-Adresse, Datum und Uhrzeit des Zugriffs, aufgerufene Seite, übertragene Datenmenge, Browsertyp und -version, Betriebssystem sowie die zuvor besuchte Seite (Referrer-URL). Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO zur Sicherstellung eines störungsfreien und sicheren Betriebs sowie zur Abwehr von Angriffen. Die Logfiles werden spätestens nach sieben (7) Tagen gelöscht bzw. anonymisiert.</p>
+
+<h2>12. Speicherdauer und gesetzliche Aufbewahrungspflichten</h2>
+<p>Ihre Bestelldaten werden gespeichert, solange dies für die Abwicklung der Bestellung und für mögliche Rückfragen oder Gewährleistungsfälle erforderlich ist. Darüber hinaus unterliegen Bestell- und Abrechnungsdaten als steuer- und handelsrechtlich relevante Unterlagen gesetzlichen Aufbewahrungspflichten (insbesondere nach § 147 AO und § 257 HGB, derzeit bis zu zehn Jahre; hierzu zählt auch das elektronische Bestelljournal nach den GoBD). Rechtsgrundlage insoweit ist Art. 6 Abs. 1 lit. c DSGVO. Nach Ablauf der Fristen werden die Daten gelöscht.</p>
+
+<h2>13. Ihre Rechte als betroffene Person</h2>
+<p>Sie haben gegenüber uns folgende Rechte hinsichtlich der Sie betreffenden personenbezogenen Daten:</p>
+<ul>
+  <li>Recht auf Auskunft (Art. 15 DSGVO)</li>
+  <li>Recht auf Berichtigung (Art. 16 DSGVO)</li>
+  <li>Recht auf Löschung (Art. 17 DSGVO)</li>
+  <li>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+  <li>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</li>
+  <li>Recht auf Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO)</li>
+</ul>
+<p><strong>Widerspruchsrecht (Art. 21 DSGVO): Soweit wir Ihre Daten auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse) verarbeiten, haben Sie das Recht, aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit Widerspruch gegen die Verarbeitung einzulegen. Wir verarbeiten die Daten dann nicht mehr, es sei denn, wir können zwingende schutzwürdige Gründe für die Verarbeitung nachweisen, die Ihre Interessen, Rechte und Freiheiten überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen.</strong></p>
+<p>Zur Ausübung Ihrer Rechte genügt eine formlose Nachricht an die unter Ziffer 1 genannten Kontaktdaten.</p>
+
+<h2>14. Beschwerderecht bei einer Aufsichtsbehörde</h2>
+<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Für uns zuständig ist: <span class="todo">[Aufsichtsbehörde des Bundeslands eintragen, z. B. „Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestraße 2–4, 40213 Düsseldorf, www.ldi.nrw.de“]</span>. Sie können sich auch an die Aufsichtsbehörde Ihres Wohnorts wenden.</p>
+
+<h2>15. Keine automatisierte Entscheidungsfindung</h2>
+<p>Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt.</p>
+
+<h2>16. Änderung dieser Datenschutzerklärung</h2>
+<p>Wir passen diese Datenschutzerklärung an, sobald Änderungen an der Bestellseite oder geänderte rechtliche Vorgaben dies erforderlich machen. Es gilt jeweils die hier veröffentlichte Fassung.</p>
+
+<p class="stand">Stand: <span class="todo">[Monat Jahr]</span></p>

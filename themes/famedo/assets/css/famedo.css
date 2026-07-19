@@ -154,8 +154,15 @@ body.famedo{
 .famedo .static-page{padding:22px 16px 40px;max-width:720px;margin:0 auto}
 .famedo .static-page__title{font-family:var(--font-head);font-weight:800;font-size:24px;margin:6px 0 16px}
 .famedo .static-page__content{font-size:14px;line-height:1.65}
-.famedo .static-page__content h2,.famedo .static-page__content h3{font-family:var(--font-head);font-weight:700;font-size:17px;margin:20px 0 8px}
+.famedo .static-page__content h2,.famedo .static-page__content h3{font-family:var(--font-head);font-weight:700;font-size:17px;margin:22px 0 8px}
 .famedo .static-page__content a{text-decoration:underline;text-underline-offset:2px}
+/* Legal-page template classes (tenant-template/legal/*.html seeds these) */
+.famedo .static-page__content p,.famedo .static-page__content li{color:#4C545E;margin-bottom:10px}
+.famedo .static-page__content ul{padding-left:20px;margin-bottom:12px}
+.famedo .static-page__content strong{color:var(--ink)}
+.famedo .static-page__content .sub{color:var(--muted);font-size:14px;margin:-6px 0 24px}
+.famedo .static-page__content .todo{background:var(--brand-tint);border-radius:6px;padding:2px 8px;font-weight:600;color:var(--brand-deep)}
+.famedo .static-page__content .stand{margin-top:28px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
 
 /* ---------- Hero (menus page, components/local-header) ---------- */
 .famedo .hero{position:relative}
