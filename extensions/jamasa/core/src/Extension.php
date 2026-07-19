@@ -9,6 +9,7 @@ use Igniter\System\Classes\BaseExtension;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
 use Jamasa\Core\Listeners\PauseWorkingSchedule;
 use Override;
@@ -44,6 +45,14 @@ class Extension extends BaseExtension
                 'description' => 'lang:igniter.payregister::default.mollie.text_payment_desc',
             ],
         ];
+    }
+
+    #[Override]
+    public function register(): void
+    {
+        // famedo:sync-settings — idempotent per-tenant DB-settings convergence
+        // (replaces the manual post-image-bump one-liners; see SyncSettings).
+        $this->registerConsoleCommand('famedo.sync-settings', SyncSettings::class);
     }
 
     #[Override]
