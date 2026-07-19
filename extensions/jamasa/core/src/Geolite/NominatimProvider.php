@@ -65,38 +65,31 @@ class NominatimProvider extends BaseNominatimProvider
     }
 
     /**
-     * Famedo address flow (2026-07-19, beyond the upstream title fix):
-     * - surface the structured address parts (road, house number, postcode,
-     *   city, suburb) into the suggestion data — the raw response carries them
-     *   (addressdetails=1) but the base provider discards everything except
-     *   name/display_name/coords;
-     * - drop hits without a road (POIs are noise when entering a delivery
-     *   address);
-     * - dedupe by road|postcode|city: OSM stores streets as multiple
-     *   way-segments and Nominatim returns every segment — customers saw three
-     *   near-identical "Cottenburgstraße" rows.
-     */
-    /**
-     * Suggestions are only useful near the restaurant (a Dortmund customer
-     * never needs Berlin streets): viewbox biases Nominatim toward the
-     * tenant's area, a haversine POST-filter guarantees the radius (bounded=1
-     * is flaky with free-text street queries), and an empty first pass is
-     * retried with the tenant's city appended — bare common street names
-     * ("Hauptstraße") rank terribly in Nominatim's free-text search without
-     * context. The delivery-area check at confirm stays the real gate — this
-     * is suggestion hygiene, not enforcement.
+     * Famedo address suggestions run on PHOTON (photon.komoot.io), not on
+     * Nominatim's search endpoint: Nominatim's own docs state it is NOT
+     * suitable for autocomplete, and it showed — no prefix matching, no typo
+     * tolerance, importance ranking that hid the tenant-town street behind
+     * big-city namesakes. Photon is the established OSM autocomplete engine
+     * (built by Komoot, DE): prefix search-as-you-type, typo tolerance,
+     * native proximity bias via lat/lon, building-level hits incl. house
+     * numbers. Self-hostable later if volume demands it.
+     *
+     * Our layer on top stays minimal and deterministic:
+     * - structured parts (road/houseNumber/postcode/city) into suggestion data
+     * - drop hits without a street; hard radius filter (SUGGESTION_RADIUS_KM)
+     * - dedupe by road|nr|postcode|city (way-segments come back per type)
+     * - number-stripped retry: a typed house number OSM doesn't know returns
+     *   ZERO hits — retry with the number removed so the street still
+     *   suggests; the sheet re-attaches the typed number (customer truth).
+     *
+     * Geocode VERIFICATION (onConfirm / checkout) stays on Nominatim — that
+     * path works and carries our house-number injection above.
      */
     private const SUGGESTION_RADIUS_KM = 25;
 
-    /**
-     * Ask Nominatim for MANY candidates: it ranks by global "importance"
-     * (big-city streets first), so with the default limit of 5 a small local
-     * street never even reaches us — the distance filter can only keep what
-     * was returned. One request either way; we filter + sort + cap ourselves.
-     */
-    private const SUGGESTION_FETCH_LIMIT = 30;
-
     private const SUGGESTION_SHOW_LIMIT = 6;
+
+    private const PHOTON_ENDPOINT = 'https://photon.komoot.io/api/';
 
     #[Override]
     public function placesAutocomplete(GeoQueryInterface $query): Collection
@@ -109,101 +102,79 @@ class NominatimProvider extends BaseNominatimProvider
         $lat = $coordinates?->getLatitude() ?: null;
         $lng = $coordinates?->getLongitude() ?: null;
 
-        $places = $this->famedoFetchPlaces($query, $query->getText(), $lat, $lng);
+        $text = trim($query->getText());
+        $places = $this->famedoFetchPhoton($text, $lat, $lng);
 
-        // second, city-scoped fetch when the first pass found nothing TRULY
-        // local — Nominatim's importance ranking favors big-city streets, so
-        // the same street name in the tenant's own town often doesn't make the
-        // result list at all without city context. Gated to plausibly complete
-        // street names: half-typed fragments must not pay a second round trip.
-        $nearest = $places->min(fn(Place $place) => (float)($place->getData('distanceKm') ?? INF));
-        if (($places->count() < 2 || $nearest > 5)
-            && mb_strlen(trim($query->getText())) >= 6
-            && ($city = array_get($famedoLocation?->getAddress() ?? [], 'city'))
-            && !str_contains(mb_strtolower($query->getText()), mb_strtolower((string)$city))
+        // typed-but-unmapped house number → zero hits; suggest the street
+        if ($places->isEmpty()
+            && preg_match('/^(.*[\pL.])\s+\d+\s*[a-zA-Z]?\s*$/u', $text, $m)
         ) {
-            $places = $places->concat(
-                $this->famedoFetchPlaces($query, $query->getText().', '.$city, $lat, $lng),
-            );
+            $places = $this->famedoFetchPhoton(trim($m[1]), $lat, $lng);
         }
-
-        // rank: streets whose name actually starts with what was typed first,
-        // then by distance — proximity alone would put a fuzzy side-match
-        // nearer the restaurant above the street the customer meant
-        $typedStreet = mb_strtolower(strtok(trim($query->getText()), " ,"));
 
         return $places
             ->unique(fn(Place $place): string => mb_strtolower(
-                $place->getData('road').'|'.$place->getData('postcode').'|'.$place->getData('city'),
+                $place->getData('road').'|'.$place->getData('houseNumber')
+                .'|'.$place->getData('postcode').'|'.$place->getData('city'),
             ))
-            ->sortBy(function(Place $place) use ($typedStreet): float {
-                $prefixMiss = $typedStreet !== '' && $typedStreet !== false
-                    && str_starts_with(mb_strtolower((string)$place->getData('road')), $typedStreet) ? 0 : 1;
-
-                return $prefixMiss * 1000 + (float)($place->getData('distanceKm') ?? 999);
-            })
             ->take(self::SUGGESTION_SHOW_LIMIT)
             ->values();
     }
 
-    protected function famedoFetchPlaces(GeoQueryInterface $query, string $text, ?float $lat, ?float $lng): Collection
+    protected function famedoFetchPhoton(string $text, ?float $lat, ?float $lng): Collection
     {
-        $endpoint = array_get($this->config, 'endpoints.places');
-        $url = sprintf($endpoint.'search?q=%s&format=json&addressdetails=1&limit=%d',
-            rawurlencode($text),
-            max($query->getLimit(), self::SUGGESTION_FETCH_LIMIT),
-        );
-
+        $url = self::PHOTON_ENDPOINT.'?q='.rawurlencode($text).'&limit=12&lang=de';
         if ($lat && $lng) {
-            $dLat = self::SUGGESTION_RADIUS_KM / 111.32;
-            $dLng = self::SUGGESTION_RADIUS_KM / (111.32 * max(cos(deg2rad($lat)), 0.01));
-            $url .= sprintf('&viewbox=%F,%F,%F,%F', $lng - $dLng, $lat + $dLat, $lng + $dLng, $lat - $dLat);
+            $url .= sprintf('&lat=%F&lon=%F', $lat, $lng);
         }
 
         try {
-            $result = $this->cacheCallback($url, fn(): array => $this->requestPlacesUrl($url, $query));
+            $features = $this->cacheCallback($url, function() use ($url): array {
+                $response = $this->httpClient->get($url, [
+                    'timeout' => 5,
+                    'headers' => ['User-Agent' => 'famedo-storefront (kontakt: iam@nothardcoded.io)'],
+                ]);
+
+                return json_decode((string)$response->getBody())->features ?? [];
+            });
         } catch (\Throwable $throwable) {
-            // vendor requestPlacesUrl throws on EMPTY responses — a normal
-            // outcome here; degrade to "no suggestions", never an error toast
-            $this->log(sprintf('Provider "%s" places suggestion lookup empty/failed: %s',
-                $this->getName(), $throwable->getMessage()));
+            // a failed lookup degrades to "no suggestions", never an error toast
+            $this->log(sprintf('Photon suggestion lookup failed: %s', $throwable->getMessage()));
 
             return new Collection;
         }
 
-        return collect($result)
-            ->map(function($item) {
-                $addr = (array)($item->address ?? []);
+        return collect($features)
+            ->map(function($feature) {
+                $p = $feature->properties ?? new \stdClass;
+                // street hits carry the name in `name`; building/POI hits in `street`
+                $road = $p->street ?? (($p->osm_key ?? '') === 'highway' ? ($p->name ?? null) : null);
+                [$pLng, $pLat] = ($feature->geometry->coordinates ?? [null, null]);
 
                 return (new Place)
-                    ->placeId((string)$item->place_id)
-                    ->title(filled($item->name ?? null) ? $item->name : $item->display_name)
-                    ->description($item->display_name)
+                    ->placeId((string)($p->osm_id ?? md5(json_encode($p))))
+                    ->title(trim(($road ?? ($p->name ?? '')).' '.($p->housenumber ?? '')))
+                    ->description(trim(($p->postcode ?? '').' '.($p->city ?? '')))
                     ->provider('nominatim')
-                    ->withData('osmType', $item->osm_type)
-                    ->withData('osmId', $item->osm_id)
-                    ->withData('class', $item->category ?? null)
-                    ->withData('latitude', $item->lat ?? null)
-                    ->withData('longitude', $item->lon ?? null)
-                    ->withData('road', $addr['road'] ?? $addr['pedestrian'] ?? null)
-                    ->withData('houseNumber', $addr['house_number'] ?? null)
-                    ->withData('postcode', $addr['postcode'] ?? null)
-                    ->withData('city', $addr['city'] ?? $addr['town'] ?? $addr['village'] ?? $addr['hamlet'] ?? null)
-                    ->withData('suburb', $addr['suburb'] ?? null);
+                    ->withData('latitude', $pLat)
+                    ->withData('longitude', $pLng)
+                    ->withData('road', $road)
+                    ->withData('houseNumber', $p->housenumber ?? null)
+                    ->withData('postcode', $p->postcode ?? null)
+                    ->withData('city', $p->city ?? null)
+                    ->withData('suburb', $p->district ?? null);
             })
             ->filter(fn(Place $place) => filled($place->getData('road')))
-            ->map(function(Place $place) use ($lat, $lng): Place {
-                if ($lat && $lng
-                    && ($pLat = (float)$place->getData('latitude'))
-                    && ($pLng = (float)$place->getData('longitude'))
-                ) {
-                    $place->withData('distanceKm', $this->famedoDistanceKm($lat, $lng, $pLat, $pLng));
+            ->filter(function(Place $place) use ($lat, $lng): bool {
+                if (!$lat || !$lng) {
+                    return true;
                 }
+                $pLat = (float)$place->getData('latitude');
+                $pLng = (float)$place->getData('longitude');
 
-                return $place;
+                return $pLat && $pLng
+                    && $this->famedoDistanceKm($lat, $lng, $pLat, $pLng) <= self::SUGGESTION_RADIUS_KM;
             })
-            ->filter(fn(Place $place): bool => !$lat || !$lng
-                || (float)($place->getData('distanceKm') ?? INF) <= self::SUGGESTION_RADIUS_KM)
             ->values();
     }
 
