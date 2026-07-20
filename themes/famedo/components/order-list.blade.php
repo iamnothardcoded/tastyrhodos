@@ -14,9 +14,13 @@
             @foreach ($orders as $order)
                 <tr @class(['align-middle', 'border-top' => !$loop->first])>
                     <td>
+                        {{-- famedo: link by hash only + show the pickup code — the
+                             sequential order_id never reaches the customer (not in
+                             the label, not in the URL). The order page resolves by
+                             hash. --}}
                         <a
                             class="btn btn-light"
-                            href="{{ page_url($orderPage, ['orderId' => $order->order_id, 'hash' => $order->hash]) }}"
+                            href="{{ page_url($orderPage, ['hash' => $order->hash]) }}"
                         >@pickupCode($order->hash)</a>
                     </td>
                     <td>{{ $order->location ? $order->location->location_name : '' }}</td>
