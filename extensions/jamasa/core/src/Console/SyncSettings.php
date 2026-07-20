@@ -151,6 +151,19 @@ class SyncSettings extends Command
             DB::table('statuses')->where('status_id', $id)->update(['status_name' => $name]);
         }
 
+        // "Angenommen" (id 10) — the print-queue status in the order rail. Created
+        // by the jamasa migration; ensured + kept silent (notify=0) here so
+        // acceptance never mails the customer (the "In Zubereitung" mail fires on
+        // 10 -> 3). Idempotent: create if the migration hasn't run yet.
+        if (!DB::table('statuses')->where('status_id', 10)->exists()) {
+            DB::table('statuses')->insert([
+                'status_id' => 10, 'status_name' => 'Angenommen', 'notify_customer' => 0,
+                'status_for' => 'order', 'status_color' => '#5FA9C4',
+            ]);
+        } else {
+            DB::table('statuses')->where('status_id', 10)->update(['status_name' => 'Angenommen', 'notify_customer' => 0]);
+        }
+
         $this->line('  ✓ payment labels + order-status names (German)');
     }
 

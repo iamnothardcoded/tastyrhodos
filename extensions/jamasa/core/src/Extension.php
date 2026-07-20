@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
+use Jamasa\Core\Listeners\AutoAcceptOrder;
 use Jamasa\Core\Listeners\PauseWorkingSchedule;
 use Override;
 
@@ -124,6 +125,12 @@ class Extension extends BaseExtension
         // "CLOSED" state (browsable menu, checkout gated) instead of disabling
         // order types (redirect loop) or the location (500). See PauseWorkingSchedule.
         Event::listen(WorkingScheduleCreatedEvent::class, [PauseWorkingSchedule::class, 'handle']);
+
+        // Auto-accept: the instant an order is paid (admin.order.paymentProcessed),
+        // promote it 1 -> 10 ("Angenommen") in auto mode so the printer prints it.
+        // In manual mode it stays at 1 for the owner to accept in the app. This is
+        // the ONE home of "acceptance" — the printer stays dumb. See AutoAcceptOrder.
+        Event::listen('admin.order.paymentProcessed', [AutoAcceptOrder::class, 'handle']);
 
         // Mollie hosted-checkout / bank-statement / report line: the pickup code
         // IS the customer-facing order reference — for BOTH order types. It

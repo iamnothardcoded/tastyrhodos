@@ -80,6 +80,10 @@ class OrderingSettingsController extends Controller
                 $this->applySettings($location, $request);
                 break;
 
+            case 'set_manual_accept':
+                $this->setManualAccept($location, (bool) $request->input('manual_accept'));
+                break;
+
             default:
                 return response()->json(['message' => "Unknown action: {$action}"], 422);
         }
@@ -134,6 +138,19 @@ class OrderingSettingsController extends Controller
         $state->save();
     }
 
+    /**
+     * Toggle manual-accept mode for this restaurant. OFF (default) = auto: the
+     * AutoAcceptOrder listener promotes new orders 1 -> 10 the instant they're
+     * paid. ON = the Order Manager app is the acceptance gate; orders rest at 1
+     * (the pool) until the owner accepts. Read by AutoAcceptOrder.
+     */
+    protected function setManualAccept(Location $location, bool $manualAccept): void
+    {
+        $state = LocationSettings::instance($location, $this->stateItem);
+        $state->manual_accept = $manualAccept;
+        $state->save();
+    }
+
     /** Persist the reminder timestamp so the print-server's cadence survives a restart. */
     protected function heartbeat(Location $location, mixed $lastReminderAt): void
     {
@@ -182,6 +199,7 @@ class OrderingSettingsController extends Controller
 
         return [
             'location_id' => $location->getKey(),
+            'manual_accept' => (bool) $state->get('manual_accept', false),
             'paused' => (bool) $state->get('paused', false),
             'paused_by' => $state->get('paused_by'),
             'paused_since' => $state->get('paused_since'),
