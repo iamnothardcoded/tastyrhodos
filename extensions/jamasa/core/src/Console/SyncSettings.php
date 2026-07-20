@@ -164,6 +164,15 @@ class SyncSettings extends Command
             DB::table('statuses')->where('status_id', 10)->update(['status_name' => 'Angenommen', 'notify_customer' => 0]);
         }
 
+        // Status 10 is an in-progress state for the CUSTOMER tracking page — add
+        // it to processing_order_status so the progress bar lights up while an
+        // order is at 10 (otherwise it renders empty). Idempotent.
+        $proc = array_map('strval', (array) setting('processing_order_status', []));
+        if (!in_array('10', $proc, true)) {
+            $proc[] = '10';
+            setting()->set(['processing_order_status' => $proc]);
+        }
+
         $this->line('  ✓ payment labels + order-status names (German)');
     }
 

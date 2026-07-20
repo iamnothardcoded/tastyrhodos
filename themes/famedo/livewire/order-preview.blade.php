@@ -1,7 +1,9 @@
 {{-- jamasa/core override of igniter-orange::livewire.order-preview (forked from ti-theme-orange v4.1.3) --}}
-{{-- Famedo cards. Contracts: root wire:poll.120s, id="ti-order-status",
+{{-- Famedo cards. Contracts: root wire:poll, id="ti-order-status",
      customer auth branch, leave-review mount, order includes. --}}
-<div wire:poll.120s>
+{{-- Poll every 15s (upstream default is 120s) so the customer sees status
+     changes live instead of a stale timeline that needs a manual refresh. --}}
+<div wire:poll.15s>
     @if (!$order)
         <div class="famedo-card text-center" id="ti-order-status">
             @lang('jamasa.core::default.order.none_found')
