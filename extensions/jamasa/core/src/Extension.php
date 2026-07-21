@@ -171,6 +171,33 @@ class Extension extends BaseExtension
             });
         });
 
+        // Admin → Orders list: show the customer-facing pickup code as a column.
+        // The pickup code is DERIVED from the order hash (not a DB column), so the
+        // column is backed by the real `hash` column (the Lists widget emits
+        // `SELECT hash AS pickup_code`) and the value is transformed on render.
+        // Both listeners are scoped to the Orders list only.
+        Event::listen('admin.list.extendColumns', function ($widget): void {
+            if (!$widget->model instanceof \Igniter\Cart\Models\Order) {
+                return;
+            }
+            $widget->addColumns([
+                'pickup_code' => [
+                    'label' => 'Pickup Code',
+                    'select' => 'hash',        // aliased AS pickup_code
+                    'type' => 'text',
+                    'sortable' => false,        // derived value, no SQL sort
+                    'searchable' => false,      // not a real column to search on
+                ],
+            ]);
+        });
+        Event::listen('admin.list.overrideColumnValue', function ($widget, $record, $column, $value) {
+            if ($column->columnName !== 'pickup_code') {
+                return null;    // leave every other column untouched
+            }
+
+            return $value ? PickupCode::fromHash((string) $value) : null;
+        });
+
         // Register the ordering-settings + owner-console API under the same prefix
         // + Sanctum auth as the rest of the TastyIgniter API. Falls back to
         // hardcoded values so a boot-order/config timing issue can't leave the
