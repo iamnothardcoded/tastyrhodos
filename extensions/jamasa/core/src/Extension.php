@@ -177,12 +177,15 @@ class Extension extends BaseExtension
         // `SELECT hash AS pickup_code`) and the value is transformed on render.
         // Both listeners are scoped to the Orders list only.
         Event::listen('admin.list.extendColumns', function ($widget): void {
-            if (!$widget->model instanceof \Igniter\Cart\Models\Order) {
+            // Scope to the Orders admin list ONLY — by controller, not by model, so
+            // a future Order-based list or dashboard widget can't silently inherit
+            // this column (and its `hash` select).
+            if (!$widget->getController() instanceof \Igniter\Cart\Http\Controllers\Orders) {
                 return;
             }
             $config = [
                 'label' => 'Pickup Code',
-                'select' => 'hash',        // aliased AS pickup_code
+                'select' => 'hash',        // aliased AS pickup_code (hash is unique to `orders` → no join ambiguity)
                 'type' => 'text',
                 'sortable' => false,        // derived value, no SQL sort
                 'searchable' => false,      // not a real column to search on
@@ -198,8 +201,11 @@ class Extension extends BaseExtension
             $widget->addColumns(['pickup_code' => $config]);
         });
         Event::listen('admin.list.overrideColumnValue', function ($widget, $record, $column, $value) {
-            if ($column->columnName !== 'pickup_code') {
-                return null;    // leave every other column untouched
+            // Only our column, and only a scalar value (overrideColumnValue also
+            // fires for button columns where $value is an attributes ARRAY — the
+            // is_scalar guard makes the (string) cast crash-proof regardless).
+            if ($column->columnName !== 'pickup_code' || !is_scalar($value)) {
+                return null;
             }
 
             return $value ? PickupCode::fromHash((string) $value) : null;

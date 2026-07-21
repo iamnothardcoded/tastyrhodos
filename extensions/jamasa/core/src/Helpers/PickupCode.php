@@ -22,7 +22,11 @@ class PickupCode
      */
     public static function fromHash(?string $hash): string
     {
-        if (empty($hash) || strlen($hash) < 5) {
+        // Order hashes are 32-char MD5 (hex). Guard length AND hex-ness: the first
+        // 5 chars feed hexdec() below, which emits a PHP deprecation on non-hex
+        // input. Treat a non-hex/short hash as invalid — never happens for a real
+        // order, keeps the code hex-clean and PHP-version-proof.
+        if (empty($hash) || strlen($hash) < 5 || !ctype_xdigit(substr($hash, 0, 5))) {
             return '----';
         }
 
