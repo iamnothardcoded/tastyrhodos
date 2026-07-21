@@ -9,6 +9,7 @@ use Igniter\System\Classes\BaseExtension;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Jamasa\Core\Console\CreateOwner;
 use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
 use Jamasa\Core\Listeners\AutoAcceptOrder;
@@ -54,6 +55,10 @@ class Extension extends BaseExtension
         // famedo:sync-settings — idempotent per-tenant DB-settings convergence
         // (replaces the manual post-image-bump one-liners; see SyncSettings).
         $this->registerConsoleCommand('famedo.sync-settings', SyncSettings::class);
+
+        // famedo:create-owner — provision a locked-down owner-console account
+        // per tenant (their e-mail = login username). See CreateOwner.
+        $this->registerConsoleCommand('famedo.create-owner', CreateOwner::class);
     }
 
     #[Override]
