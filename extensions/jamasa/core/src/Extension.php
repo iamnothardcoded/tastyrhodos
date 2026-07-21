@@ -180,15 +180,22 @@ class Extension extends BaseExtension
             if (!$widget->model instanceof \Igniter\Cart\Models\Order) {
                 return;
             }
-            $widget->addColumns([
-                'pickup_code' => [
-                    'label' => 'Pickup Code',
-                    'select' => 'hash',        // aliased AS pickup_code
-                    'type' => 'text',
-                    'sortable' => false,        // derived value, no SQL sort
-                    'searchable' => false,      // not a real column to search on
-                ],
-            ]);
+            $config = [
+                'label' => 'Pickup Code',
+                'select' => 'hash',        // aliased AS pickup_code
+                'type' => 'text',
+                'sortable' => false,        // derived value, no SQL sort
+                'searchable' => false,      // not a real column to search on
+            ];
+            // Register in BOTH places: addColumns() populates allColumns (render),
+            // but TI's List Setup validates a user's saved column override against
+            // the raw $widget->columns (Lists::getVisibleColumns). If we only
+            // addColumns(), then once a user ticks "Pickup Code" in List Setup and
+            // saves, the override contains a column not in $widget->columns and the
+            // orders page 500s ("Invalid column name used: pickup_code"). Adding it
+            // to columns too keeps the override valid.
+            $widget->columns['pickup_code'] = $config;
+            $widget->addColumns(['pickup_code' => $config]);
         });
         Event::listen('admin.list.overrideColumnValue', function ($widget, $record, $column, $value) {
             if ($column->columnName !== 'pickup_code') {
