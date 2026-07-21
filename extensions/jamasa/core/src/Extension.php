@@ -166,11 +166,28 @@ class Extension extends BaseExtension
             });
         });
 
-        // Register the ordering-settings API under the same prefix + Sanctum auth
-        // as the rest of the TastyIgniter API. Falls back to hardcoded values so a
-        // boot-order/config timing issue can't leave the route unregistered.
-        Route::prefix(config('igniter-api.prefix') ?: 'api')
+        // Register the ordering-settings + owner-console API under the same prefix
+        // + Sanctum auth as the rest of the TastyIgniter API. Falls back to
+        // hardcoded values so a boot-order/config timing issue can't leave the
+        // route unregistered.
+        $apiPrefix = config('igniter-api.prefix') ?: 'api';
+        Route::prefix($apiPrefix)
             ->middleware(config('igniter-api.middleware') ?: ['api', \Igniter\Api\Http\Middleware\Authenticate::class])
             ->group(__DIR__.'/../routes/api.php');
+
+        // Owner-console LOGIN — unauthenticated (no token yet), but strictly
+        // throttled. Validates admin credentials and mints a short-lived
+        // `owner`-scoped token. Kept out of the authenticated group above.
+        Route::prefix($apiPrefix)
+            ->middleware(['api', 'throttle:10,1'])
+            ->post('jamasa/owner/login', [\Jamasa\Core\Http\Controllers\OwnerAuthController::class, 'login']);
+
+        // Confine owner-scoped tokens to api/jamasa/* on EVERY /api/* request.
+        // TI's stock API authorizes admin resources by tokenable TYPE and ignores
+        // abilities, so without this an owner token (minted on an admin user)
+        // would be accepted by every stock admin endpoint. Appended to the `api`
+        // group so it also covers the dynamically-registered stock resources.
+        $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
+            ->appendMiddlewareToGroup('api', \Jamasa\Core\Http\Middleware\ConfineOwnerToken::class);
     }
 }
