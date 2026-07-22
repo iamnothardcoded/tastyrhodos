@@ -2,6 +2,25 @@
   .carousel-indicators { pointer-events: none; }
   .carousel-indicators [data-bs-target] { pointer-events: auto; }
 
+/* Account area — Kachel-Hub navigation (replaces orange's left sidebar).
+   /account = tile hub; sub-pages use a "Zurück" link. Tokens from famedo.css
+   so tiles follow tenant branding. */
+  .account-hub{max-width:760px;margin:0 auto}
+  .account-hub__greet{font-size:clamp(22px,4.4vw,30px);font-weight:800;letter-spacing:-.01em;margin-bottom:6px;color:var(--ink)}
+  .account-hub__lead{color:var(--muted);margin-bottom:22px}
+  .account-hub__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .account-tile{display:flex;flex-direction:column;gap:7px;padding:18px;background:#fff;border:1px solid var(--line-strong);border-radius:14px;text-decoration:none;color:var(--ink);position:relative;transition:transform .12s,border-color .12s,box-shadow .12s}
+  .account-tile:hover,.account-tile:focus-visible{transform:translateY(-2px);border-color:var(--brand);box-shadow:0 8px 24px rgba(232,106,30,.12);color:var(--ink)}
+  .account-tile__ic{width:44px;height:44px;border-radius:12px;background:var(--brand-tint);color:var(--brand-deep);display:grid;place-items:center;font-size:18px}
+  .account-tile__t{font-weight:800;font-size:16px}
+  .account-tile__s{color:var(--muted);font-size:13px}
+  .account-tile__chev{position:absolute;top:20px;right:18px;color:var(--muted);opacity:.5;font-size:13px}
+  .account-panel{max-width:760px;margin:0 auto}
+  .account-back{display:inline-flex;align-items:center;gap:8px;color:var(--brand-deep);font-weight:700;text-decoration:none;margin-bottom:18px;font-size:14.5px}
+  .account-back:hover{color:var(--brand)}
+  .account-back i{font-size:12px}
+  @media (max-width:640px){ .account-hub__grid{grid-template-columns:1fr} }
+
 /* Fix: customer login card was col-sm-4 (~33% / ~380px on desktop) — too narrow.
    The input-group icon add-on squeezed the field so the E-Mail/Kennwort
    placeholders truncated and "Bleibe eingeloggt" wrapped. Give it a comfortable
