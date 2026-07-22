@@ -104,6 +104,13 @@ class Extension extends BaseExtension
             // has no per-provider try/catch) kills the checkout address
             // autocomplete before Nominatim is ever asked.
             'igniter-geocoder.default' => 'nominatim',
+
+            // De-brand: suppress the `X-Powered-By: TastyIgniter` response header
+            // (core PoweredBy middleware, default on). Keeps the platform's
+            // framework out of a competitor's first `curl -I`. Cosmetic — nothing
+            // depends on the header. PHP's own expose_php is Off in the image so
+            // no `X-Powered-By: PHP/x` replaces it.
+            'igniter-system.sendPoweredByHeader' => false,
         ]);
 
         // Fixed Nominatim provider (empty-title suggestions for plain addresses

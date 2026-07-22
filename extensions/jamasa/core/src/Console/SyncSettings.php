@@ -57,6 +57,7 @@ class SyncSettings extends Command
     public function handle(): int
     {
         $this->syncLanguageAndCurrency();
+        $this->syncMailSender();
         $this->syncTheme();
         $this->syncPaymentsAndStatuses();
         $this->syncLegalPagesAndGdprLink();
@@ -99,6 +100,25 @@ class SyncSettings extends Command
         Currency::where('currency_code', 'EUR')->update(['is_default' => 1]);
 
         $this->line('  ✓ language=de (admin=en), currency=EUR (de format)');
+    }
+
+    /** De-brand the email From-name. The install seeds `sender_name` = "TastyIgniter",
+     *  which is the one brand string a diner reads (mail inbox From). Converge it to
+     *  the tenant's own `site_name` — but ONLY when it is still the empty/install-seed
+     *  value, so a restaurant that deliberately set a different From-name keeps it. */
+    protected function syncMailSender(): void
+    {
+        $current = (string) setting('sender_name');
+        if ($current === '' || $current === 'TastyIgniter') {
+            $siteName = (string) setting('site_name');
+            if ($siteName !== '') {
+                setting()->set(['sender_name' => $siteName]);
+                $this->line("  ✓ mail sender_name → '{$siteName}' (was '".($current ?: 'empty')."')");
+
+                return;
+            }
+        }
+        $this->line("  · mail sender_name kept ('{$current}')");
     }
 
     /** Ensure famedo theme record exists + carries the famedo GDPR texts. */
