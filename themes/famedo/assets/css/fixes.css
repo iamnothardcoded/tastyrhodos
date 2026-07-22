@@ -1,3 +1,13 @@
 /* Fix: Carousel indicators blocking clicks */
   .carousel-indicators { pointer-events: none; }
   .carousel-indicators [data-bs-target] { pointer-events: auto; }
+
+/* Fix: customer login card was col-sm-4 (~33% / ~380px on desktop) — too narrow.
+   The input-group icon add-on squeezed the field so the E-Mail/Kennwort
+   placeholders truncated and "Bleibe eingeloggt" wrapped. Give it a comfortable
+   centered width (still capped, and full-width on mobile). Register is col-sm-6
+   already, so this targets login only. */
+  .page-account-login .col-sm-4 {
+    width: 100%;
+    max-width: 460px;
+  }
