@@ -4,4 +4,6 @@ igniter/*
 !igniter/demo/
 !jamasa/
 !jamasa/**
+!iamnothardcoded/
+!iamnothardcoded/**
 !.gitignore

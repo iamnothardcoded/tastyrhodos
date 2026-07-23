@@ -60,6 +60,7 @@ class SyncSettings extends Command
         $this->syncMailSender();
         $this->syncTheme();
         $this->syncPaymentsAndStatuses();
+        $this->syncTaxConditions();
         $this->syncLegalPagesAndGdprLink();
         $this->syncFooterAndMainNav();
 
@@ -194,6 +195,27 @@ class SyncSettings extends Command
         }
 
         $this->line('  ✓ payment labels + order-status names (German)');
+    }
+
+    /** With the tax-classes extension present, the split 7%/19% conditions carry
+     *  the VAT lines and the core single-rate condition must be off (three tax
+     *  lines otherwise). Invariant — a future §19-Kleinunternehmer tenant (no VAT
+     *  shown at all) is a manual runbook exception. */
+    protected function syncTaxConditions(): void
+    {
+        if (!class_exists(\Iamnothardcoded\TaxClasses\Extension::class)) {
+            $this->line('  · tax conditions skipped (tax-classes extension not installed)');
+
+            return;
+        }
+
+        $conditions = (array) \Igniter\Cart\Models\CartSettings::get('conditions');
+        $conditions['tax']['status'] = 0;
+        $conditions['tax_reduced']['status'] = 1;
+        $conditions['tax_standard']['status'] = 1;
+        \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
+
+        $this->line('  ✓ tax conditions: core VAT off, tax classes 7%/19% on');
     }
 
     /** Seed legal page bodies from the shipped template — guarded so a tenant's

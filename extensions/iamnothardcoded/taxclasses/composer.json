@@ -1,0 +1,34 @@
+{
+    "name": "iamnothardcoded/ti-ext-taxclasses",
+    "type": "tastyigniter-package",
+    "description": "German VAT tax classes: 7% reduced / 19% standard per menu item or category, with correct per-class gross tax lines.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "iamnothardcoded"
+        }
+    ],
+    "require": {
+        "tastyigniter/core": "^v4.0",
+        "tastyigniter/ti-ext-cart": "^v4.0",
+        "tastyigniter/ti-ext-local": "^v4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Iamnothardcoded\\TaxClasses\\": "src/"
+        }
+    },
+    "extra": {
+        "tastyigniter-extension": {
+            "code": "iamnothardcoded.taxclasses",
+            "name": "Tax Classes",
+            "icon": {
+                "class": "fa fa-percent",
+                "color": "#fff",
+                "backgroundColor": "#27ae60"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
