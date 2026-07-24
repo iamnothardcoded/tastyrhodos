@@ -30,6 +30,14 @@ return [
         'search_again' => 'Neu suchen',
         'no_suggestions' => 'Keine Vorschläge gefunden',
         'searching' => 'Suche Adressen …',
+        'search_label' => 'Adresse suchen',
+        'search_placeholder' => 'Straße und Hausnummer eingeben …',
+        'address2_label' => 'Adresszusatz (optional)',
+        'address2_placeholder' => 'z. B. Etage, Klingel, Firma',
+        'manual_entry' => 'Adresse nicht dabei? Manuell eingeben',
+        'zone_checking' => 'Prüfe Liefergebiet …',
+        'unverified' => 'Adresse konnte nicht automatisch überprüft werden',
+        'unverified_more' => 'Bitte kontrolliere deine Adresse noch einmal auf Tippfehler. Deine Bestellung kannst du trotzdem ganz normal aufgeben — möglicherweise ruft dich das Restaurant zur Bestätigung kurz an.',
     ],
 
     'hero' => [

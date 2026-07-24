@@ -23,3 +23,15 @@
     id="delivery-address-feedback"
     class="text-danger fs-6"
 />
+{{-- Geocoder-blind fail-open: the order proceeds (restaurant judges by phone),
+     but the customer should double-check what they typed — soft info, no block.
+     Short line + tap-to-expand ⓘ details. --}}
+@if(\Igniter\Local\Facades\Location::userPosition()?->getValue('famedoBlindFallback'))
+    <div class="text-muted small mt-1" x-data="{ open: false }">
+        <span>@lang('jamasa.core::default.address.unverified')</span>
+        <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" x-on:click="open = !open" aria-label="Info">
+            <i class="fas fa-circle-info"></i>
+        </button>
+        <div x-show="open" class="mt-1">@lang('jamasa.core::default.address.unverified_more')</div>
+    </div>
+@endif

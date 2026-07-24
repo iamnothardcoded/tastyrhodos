@@ -147,6 +147,10 @@
                                                 @include('igniter-orange::includes.local.autocomplete-suggestions')
                                             </div>
                                         @endif
+                                        {{-- manual fallback (parity with the Adressbuch): address not
+                                             found / not in OSM — opens the field block, rescue path
+                                             at confirm covers the rest --}}
+                                        <a role="button" class="famedo-addr-restart" x-on:click="addrManual()">@lang('jamasa.core::default.address.manual_entry')</a>
                                     </div>
                                     {{-- picked state: Straße/PLZ/Stadt prefilled + required Hausnummer --}}
                                     <div x-cloak x-show="addrPicked" class="famedo-addr-fields" wire:key="famedo-addr-fields">

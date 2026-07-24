@@ -31,6 +31,14 @@ return [
         'search_again' => 'Search again',
         'no_suggestions' => 'No suggestions found',
         'searching' => 'Searching addresses …',
+        'search_label' => 'Search address',
+        'search_placeholder' => 'Enter street and house number …',
+        'address2_label' => 'Address extra (optional)',
+        'address2_placeholder' => 'e.g. floor, doorbell, company',
+        'manual_entry' => 'Address not listed? Enter it manually',
+        'zone_checking' => 'Checking delivery area …',
+        'unverified' => 'Address could not be verified automatically',
+        'unverified_more' => 'Please double-check your address for typos. You can still place your order as usual — the restaurant may give you a quick call to confirm.',
     ],
 
     'hero' => [

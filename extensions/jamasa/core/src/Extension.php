@@ -178,6 +178,39 @@ class Extension extends BaseExtension
             });
         });
 
+        // Geocoder-blind rescue orders: stamp a warning into the order comment so
+        // the kitchen receipt (prints comments inverted) and the Order Manager
+        // show it — the restaurant verifies BEFORE the driver leaves.
+        // ⚠️ Deliberately at PLACEMENT (afterSaveOrder), NOT model.beforeCreate:
+        // TI creates a DRAFT order row when checkout is first opened, and a
+        // create-time stamp reads whatever the session held at page load — a
+        // rescue selected then abandoned earlier leaks into the draft's comment
+        // and shows up PREFILLED in the checkout note textarea (bit us: order
+        // #247, 2026-07-24). At afterSaveOrder, validateCheckout has just synced
+        // the session position to THIS order's final address, so marker ↔ order
+        // can't desync; the un-stamp branch heals any leftover from earlier
+        // attempts. Session position is null for API/POS-created orders.
+        Event::listen('igniter.checkout.afterSaveOrder', function ($order): void {
+            if (!$order instanceof \Igniter\Cart\Models\Order || !$order->isDeliveryType()) {
+                return;
+            }
+
+            // Wording is customer-visible too (comment shows on the success
+            // page/mails) — must read as "WE may contact YOU", never as an
+            // invitation for the customer to call the restaurant.
+            $note = 'ACHTUNG: Adresse nicht automatisch geprüft - wir kontaktieren dich bei Rückfragen';
+            $isRescue = (bool)\Igniter\Local\Facades\Location::userPosition()?->getValue('famedoBlindFallback');
+            $hasNote = str_contains((string)$order->comment, $note);
+
+            if ($isRescue && !$hasNote) {
+                $order->comment = trim($note."\n".(string)$order->comment);
+                $order->saveQuietly();
+            } elseif (!$isRescue && $hasNote) {
+                $order->comment = trim(str_replace($note, '', (string)$order->comment));
+                $order->saveQuietly();
+            }
+        });
+
         // Admin → Orders list: show the customer-facing pickup code as a column.
         // The pickup code is DERIVED from the order hash (not a DB column), so the
         // column is backed by the real `hash` column (the Lists widget emits
@@ -233,6 +266,21 @@ class Extension extends BaseExtension
         Route::prefix($apiPrefix)
             ->middleware(['api', 'throttle:10,1'])
             ->post('jamasa/owner/login', [\Jamasa\Core\Http\Controllers\OwnerAuthController::class, 'login']);
+
+        // Photon address suggestions for the account Adressbuch (web session,
+        // logged-in customers only — the address page itself is security:customer).
+        // Auth is checked IN the controller (401 JSON): the auth middleware's
+        // unauthenticated path redirects to route('login'), which TI doesn't
+        // define → 500. Throttled to protect photon.komoot.io; the provider's
+        // cacheCallback additionally dedupes repeat queries.
+        Route::middleware(['web', 'throttle:30,1'])
+            ->get('jamasa/address-suggestions', \Jamasa\Core\Http\Controllers\AddressSuggestionsController::class);
+
+        // Delivery-zone pre-check for the Adressbuch save gate (same auth-in-
+        // controller pattern). Tighter throttle: one check per completed address,
+        // not per keystroke.
+        Route::middleware(['web', 'throttle:15,1'])
+            ->get('jamasa/address-zone-check', \Jamasa\Core\Http\Controllers\AddressZoneCheckController::class);
 
         // Confine owner-scoped tokens to api/jamasa/* on EVERY /api/* request.
         // TI's stock API authorizes admin resources by tokenable TYPE and ignores

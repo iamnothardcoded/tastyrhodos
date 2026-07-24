@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Jamasa\Core\Geolite;
 
 use Igniter\Flame\Geolite\Contracts\GeoQueryInterface;
+use Igniter\Flame\Geolite\GeoQuery;
+use Igniter\Flame\Geolite\Model\Location as GeoliteLocation;
 use Igniter\Flame\Geolite\Place;
 use Igniter\Flame\Geolite\Provider\NominatimProvider as BaseNominatimProvider;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Override;
+use Throwable;
 
 /**
  * Nominatim provider with a fixed placesAutocomplete.
@@ -49,7 +53,12 @@ class NominatimProvider extends BaseNominatimProvider
     #[Override]
     public function geocodeQuery(GeoQueryInterface $query): Collection
     {
-        $results = parent::geocodeQuery($query);
+        try {
+            $results = parent::geocodeQuery($query);
+        } catch (Throwable) {
+            // Nominatim down = "can't tell" — same rule as an empty result below.
+            $results = collect();
+        }
 
         // house number = trailing token of the first comma-segment
         if (preg_match('/^[^,]*?[\pL.]\s+(\d+\s?[a-zA-Z]?)\s*(?:,|$)/u', trim($query->getText()), $m)) {
@@ -61,7 +70,130 @@ class NominatimProvider extends BaseNominatimProvider
             });
         }
 
+        if ($results->isEmpty() && ($parts = $this->famedoParseAddress($query->getText())) !== null) {
+            // BEFORE rescuing, retry ONCE with the canonical German composition:
+            // Nominatim's free-form parser chokes on the vendor's comma-less
+            // implode shape even for REAL addresses — the clean retry geocodes
+            // those correctly (real result, no rescue, no ACHTUNG stamp). Only
+            // an address that fails BOTH attempts is genuinely geocoder-blind.
+            $canonical = sprintf('%s %s, %s %s', $parts['street'], $parts['number'], $parts['postcode'], $parts['city']);
+            if ($canonical !== trim($query->getText())) {
+                try {
+                    $results = parent::geocodeQuery(GeoQuery::create($canonical));
+                } catch (Throwable) {
+                    $results = collect();
+                }
+                $results->each(function($location) use ($parts): void {
+                    if (empty($location->getStreetNumber()) && filled($location->getStreetName())) {
+                        $location->setStreetNumber($parts['number']);
+                    }
+                });
+            }
+
+            if ($results->isEmpty() && ($blind = $this->famedoSynthesize($parts, $query))) {
+                $results = collect([$blind]);
+            }
+        }
+
         return $results;
+    }
+
+    /**
+     * Geocoder-blind FAIL-OPEN (user decision 2026-07-24): when Nominatim
+     * cannot place a full delivery address at all, the customer must still be
+     * able to order — the restaurant judges by phone, offline. The platform
+     * rule: "block only when the system is CONFIDENT; uncertainty never blocks
+     * a human." A confidently-geocoded out-of-zone address still gets rejected
+     * by the normal area check — this fallback never fires then (results
+     * non-empty).
+     *
+     * Mechanics: synthesize a result carrying the CUSTOMER'S OWN address parts
+     * (parsed from the query we composed ourselves) but the RESTAURANT'S
+     * coordinates — so every downstream gate works unchanged: the zone check
+     * lands in the restaurant's own (default) area → default delivery fee,
+     * and checkout's prepareDeliveryAddress extracts the customer's real
+     * street/number/PLZ/city for the order.
+     *
+     * Strictly scoped: only fires for a full street address, in one of the
+     * THREE shapes our own flows produce:
+     *   A: "Straße Nr, 44575 Stadt"        (fulfillment sheet compose)
+     *   B: "Straße Nr, Stadt 44575"        (format_address() on saved addresses)
+     *   C: "Nr Straße Stadt [Stadt] 44575 [Germany]"
+     *      (OrderManager::validateDeliveryAddress implode(' ', fields) at final
+     *       submission — comma-less, number-first, state usually duplicating
+     *       the city, country appended)
+     * Arbitrary queries (admin location geocoding etc.) keep their honest
+     * empty result.
+     */
+    /** @return ?array{street: string, number: string, postcode: string, city: string} */
+    protected function famedoParseAddress(string $text): ?array
+    {
+        $text = trim($text);
+        $text = trim((string)preg_replace('/[\s,]*(Germany|Deutschland)\s*$/iu', '', $text));
+
+        if (preg_match('/^(.+?)\s+(\d+\s?[a-zA-Z]?)\s*,\s*(.+)$/u', $text, $m)) {
+            // shapes A/B — PLZ + city in either order after the comma
+            [, $street, $number, $rest] = $m;
+            if (!preg_match('/\b(\d{5})\b/', $rest, $pm)) {
+                return null;
+            }
+            $postcode = $pm[1];
+            $city = trim(str_replace($postcode, '', $rest), " \t,");
+        } elseif (preg_match('/^(\d+\s?[a-zA-Z]?)\s+(.+?)\s+(\d{5})$/u', $text, $m)) {
+            // shape C — collapse the "city city" repetition (state == city),
+            // else assume the last token is the city
+            [, $number, $middle, $postcode] = $m;
+            if (preg_match('/^(.*?)\s+(.+?)\s+\2$/u', $middle, $mm)) {
+                $street = trim($mm[1]);
+                $city = trim($mm[2]);
+            } else {
+                $tokens = preg_split('/\s+/', $middle);
+                $city = trim((string)array_pop($tokens));
+                $street = trim(implode(' ', $tokens));
+            }
+        } else {
+            return null;
+        }
+
+        $street = trim($street);
+        $city = trim($city);
+        if ($street === '' || $city === '') {
+            return null;
+        }
+
+        return [
+            'street' => $street,
+            'number' => (string)preg_replace('/\s+/', '', $number),
+            'postcode' => $postcode,
+            'city' => $city,
+        ];
+    }
+
+    /** @param array{street: string, number: string, postcode: string, city: string} $parts */
+    protected function famedoSynthesize(array $parts, GeoQueryInterface $query): ?GeoliteLocation
+    {
+        $famedoLocation = \Igniter\Local\Facades\Location::current()
+            ?? \Igniter\Local\Models\Location::getDefault();
+        $coordinates = $famedoLocation?->getCoordinates();
+        if (!$coordinates) {
+            return null;
+        }
+
+        Log::notice(sprintf('famedo geocoder-blind fallback: "%s" accepted at restaurant coordinates (default zone/fee applies)', $query->getText()));
+
+        return (new GeoliteLocation('famedo-blind-fallback'))
+            ->setCoordinates($coordinates->getLatitude(), $coordinates->getLongitude())
+            ->setStreetName($parts['street'])
+            ->setStreetNumber($parts['number'])
+            ->setPostalCode($parts['postcode'])
+            ->setSubLocality($parts['city'])   // checkout maps `city` FROM subLocality
+            // Locality deliberately NOT set: checkout maps it to `state`, which
+            // then duplicates the city in every rendered address ("…, Stadt PLZ,
+            // Stadt") and re-enters the validation implode twice.
+            ->setCountryCode('DE')
+            ->setCountryName('Deutschland')
+            ->setValue('famedoBlindFallback', true)
+            ->withFormattedAddress(sprintf('%s %s, %s %s', $parts['street'], $parts['number'], $parts['postcode'], $parts['city']));
     }
 
     /**

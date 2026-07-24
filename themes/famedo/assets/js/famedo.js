@@ -88,6 +88,7 @@
         Alpine.data('FamedoAddress', function () {
             return {
                 addrPicked: false,
+                addrManualMode: false,
                 addrRoad: '',
                 addrNr: '',
                 addrPlz: '',
@@ -103,6 +104,7 @@
                     this.addrCity = city || '';
                     this.addrNr = (m ? m[1].replace(/\s+/g, '') : '') || nr || '';
                     this.addrPicked = true;
+                    this.addrManualMode = false;
                     this.addrSync();
 
                     if (!this.addrNr) {
@@ -121,8 +123,33 @@
                     this.$wire.set('searchQuery', composed, false);
                 },
 
+                addrManual() {
+                    // Manual fallback (parity with the Adressbuch): open the field
+                    // block with whatever was typed, parsed street/nr/PLZ/city.
+                    var typedEl = document.getElementById('search-query');
+                    var q = (typedEl ? typedEl.value : '').trim();
+                    var parts = q.split(',');
+                    var first = parts[0].trim();
+                    var m = first.match(/^(.*?)\s+(\d+\s*[a-zA-Z]?)$/);
+                    this.addrRoad = m ? m[1].trim() : first;
+                    this.addrNr = m ? m[2].replace(/\s+/g, '') : '';
+                    var rest = parts.slice(1).join(' ').trim();
+                    var pm = rest.match(/\b(\d{5})\b/);
+                    this.addrPlz = pm ? pm[1] : '';
+                    this.addrCity = pm ? rest.replace(pm[1], '').replace(/,/g, ' ').trim() : rest;
+                    this.addrPicked = true;
+                    this.addrManualMode = true;
+                    this.addrSync();
+                    var self = this;
+                    this.$nextTick(function () {
+                        if (!self.addrRoad) return;
+                        if (!self.addrNr && self.$refs.addrNr) self.$refs.addrNr.focus();
+                    });
+                },
+
                 addrReset() {
                     this.addrPicked = false;
+                    this.addrManualMode = false;
                     this.addrNr = '';
                     this.$wire.set('searchQuery', '', false);
                     this.$nextTick(function () {
@@ -132,7 +159,207 @@
                 },
 
                 get addrBlocked() {
-                    return this.addrPicked && !this.addrNr.trim();
+                    if (!this.addrPicked) return false;
+                    if (!this.addrNr.trim()) return true;
+                    // manual mode: geocoder likely knows nothing — the rescue path
+                    // needs a full address, so require PLZ + Stadt before confirm
+                    return this.addrManualMode
+                        && (!/^\d{5}$/.test(this.addrPlz.trim()) || !this.addrCity.trim() || !this.addrRoad.trim());
+                },
+            };
+        });
+    });
+})();
+
+/* Famedo address-book flow (account Adressbuch modal). Same UX as the
+   fulfillment sheet's FamedoAddress, but suggestions come from a plain fetch
+   to the jamasa endpoint (the vendor AddressBook Livewire component is final
+   and has no search pipeline), and the pick/edit state is synced into the
+   STRUCTURED form.* wire props as DEFERRED sets that ride the onSave request.
+   Same ground-truth rule: the customer-typed house number wins. */
+(function () {
+    document.addEventListener('alpine:init', function () {
+        Alpine.data('FamedoAddressBook', function (address1, postcode, city, countryId) {
+            return {
+                abQuery: '',
+                abSuggestions: [],
+                abLoading: false,
+                abSearched: false,
+                abPicked: false,
+                // 'picked' (from a suggestion — zone gate ENFORCED) | 'manual' |
+                // 'edit' — manual/edit are the human fallback and never get the
+                // zone nag; checkout stays the authoritative gate for usage.
+                abMode: '',
+                abRoad: '',
+                abNr: '',
+                abPlz: '',
+                abCity: '',
+                abCountryId: countryId || null,
+                // delivery-zone pre-check: 'unknown' | 'checking' | 'ok' | 'out'
+                // ('unknown'/geocoder-hiccup fails OPEN)
+                abZone: 'unknown',
+                abZoneTimer: null,
+                abZoneQuery: '',
+
+                init() {
+                    // EDIT MODE: seed from the existing record — no search step.
+                    if (address1) {
+                        var m = address1.match(/^(.*?)[\s,]+(\d+\s*[a-zA-Z]?)\s*$/);
+                        this.abRoad = m ? m[1].trim() : address1.trim();
+                        this.abNr = m ? m[2].replace(/\s+/g, '') : '';
+                        this.abPlz = postcode || '';
+                        this.abCity = city || '';
+                        this.abPicked = true;
+                        this.abMode = 'edit';
+                    }
+                },
+
+                abSearch() {
+                    var q = this.abQuery.trim();
+                    if (q.length < 3) {
+                        this.abSuggestions = [];
+                        this.abSearched = false;
+                        return;
+                    }
+                    var self = this;
+                    self.abLoading = true;
+                    fetch('/jamasa/address-suggestions?q=' + encodeURIComponent(q), {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' },
+                    })
+                        .then(function (r) { return r.ok ? r.json() : []; })
+                        .then(function (list) { self.abSuggestions = Array.isArray(list) ? list : []; })
+                        .catch(function () { self.abSuggestions = []; })
+                        .finally(function () {
+                            self.abLoading = false;
+                            self.abSearched = true;
+                        });
+                },
+
+                abPick(s) {
+                    // customer-typed trailing house number beats the suggestion's
+                    var m = this.abQuery.match(/(\d+\s*[a-zA-Z]?)\s*$/);
+                    this.abRoad = s.road || '';
+                    this.abPlz = s.postcode || '';
+                    this.abCity = s.city || '';
+                    this.abNr = (m ? m[1].replace(/\s+/g, '') : '') || s.houseNumber || '';
+                    this.abPicked = true;
+                    this.abMode = 'picked';
+                    this.abSuggestions = [];
+                    this.abSync();
+
+                    if (!this.abNr) {
+                        var self = this;
+                        this.$nextTick(function () {
+                            if (self.$refs.abNr) self.$refs.abNr.focus();
+                        });
+                    }
+                },
+
+                abSync() {
+                    if (!this.abPicked) return;
+                    // deferred sets: no network now, values ride the onSave request
+                    this.$wire.set('form.address_1', (this.abRoad + ' ' + this.abNr).trim(), false);
+                    this.$wire.set('form.postcode', this.abPlz.trim(), false);
+                    this.$wire.set('form.city', this.abCity.trim(), false);
+                    // ALWAYS ship country_id: the vendor component wipes the whole
+                    // form (incl. the mount-time country default) on every
+                    // addressId change — without this, saves after the first
+                    // modal open/close fail "country required" invisibly.
+                    if (this.abCountryId) {
+                        this.$wire.set('form.country_id', this.abCountryId, false);
+                    }
+                    this.abZoneSchedule();
+                },
+
+                abComplete() {
+                    return !!(this.abRoad.trim() && this.abNr.trim()
+                        && /^\d{5}$/.test(this.abPlz.trim()) && this.abCity.trim());
+                },
+
+                abZoneSchedule() {
+                    clearTimeout(this.abZoneTimer);
+                    // Zone gate in EVERY mode (picked/manual/edit): a confident
+                    // out-of-zone address would be rejected at checkout forever —
+                    // saving it is useless, so blocking here is honesty, not
+                    // nagging. The true last resort is untouched: when the
+                    // geocoder CAN'T place an address (covered:null), the save
+                    // passes silently — uncertainty never blocks a human.
+                    if (!this.abComplete()) { this.abZone = 'unknown'; return; }
+                    var composed = (this.abRoad + ' ' + this.abNr).trim()
+                        + ', ' + (this.abPlz + ' ' + this.abCity).trim();
+                    if (composed === this.abZoneQuery && this.abZone !== 'unknown') return;
+                    var self = this;
+                    this.abZone = 'checking';
+                    this.abZoneTimer = setTimeout(function () { self.abZoneCheck(composed); }, 600);
+                },
+
+                abZoneCheck(composed) {
+                    var self = this;
+                    self.abZoneQuery = composed;
+                    // Hard 6s cap: the check leans on Nominatim, which can crawl.
+                    // A hanging check must never keep the save button dead —
+                    // timeout = "can't tell" = 'unverified' (fail-open).
+                    var abort = new AbortController();
+                    var timer = setTimeout(function () { abort.abort(); }, 6000);
+                    fetch('/jamasa/address-zone-check?q=' + encodeURIComponent(composed), {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' },
+                        signal: abort.signal,
+                    })
+                        .then(function (r) { return r.ok ? r.json() : { covered: null }; })
+                        .then(function (res) {
+                            if (self.abZoneQuery !== composed) return; // stale response
+                            // covered:false = confident out → block.
+                            // covered:null  = couldn't verify → 'unverified': soft
+                            //                 non-blocking notice (fail-open).
+                            // covered:true  = fine, silence.
+                            self.abZone = res.covered === false ? 'out'
+                                : (res.covered === null ? 'unverified' : 'ok');
+                        })
+                        .catch(function () { if (self.abZoneQuery === composed) self.abZone = 'unverified'; })
+                        .finally(function () { clearTimeout(timer); });
+                },
+
+                abManual() {
+                    // Fallback when Photon knows nothing: open the fields with
+                    // whatever was typed (street + trailing number parsed out),
+                    // customer completes by hand. abBlocked still enforces
+                    // Straße/Nr/PLZ/Stadt before saving.
+                    var q = this.abQuery.trim();
+                    var m = q.match(/^(.*?)[\s,]+(\d+\s*[a-zA-Z]?)\s*$/);
+                    this.abRoad = m ? m[1].trim() : q;
+                    this.abNr = m ? m[2].replace(/\s+/g, '') : '';
+                    this.abPlz = '';
+                    this.abCity = '';
+                    this.abPicked = true;
+                    this.abMode = 'manual';
+                    this.abSuggestions = [];
+                    this.abSync();
+                    var self = this;
+                    this.$nextTick(function () {
+                        var el = !self.abRoad ? 'abRoadEl' : (!self.abNr ? 'abNr' : 'abPlzEl');
+                        if (self.$refs[el]) self.$refs[el].focus();
+                    });
+                },
+
+                abReset() {
+                    this.abPicked = false;
+                    this.abNr = '';
+                    this.abQuery = '';
+                    this.abSuggestions = [];
+                    this.abSearched = false;
+                    var self = this;
+                    this.$nextTick(function () {
+                        if (self.$refs.abQuery) self.$refs.abQuery.focus();
+                    });
+                },
+
+                get abBlocked() {
+                    return !this.abPicked
+                        || !this.abComplete()
+                        || this.abZone === 'out'
+                        || this.abZone === 'checking';
                 },
             };
         });
