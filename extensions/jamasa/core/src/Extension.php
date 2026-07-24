@@ -178,6 +178,16 @@ class Extension extends BaseExtension
             });
         });
 
+        // German address order on every save: checkout-created rows arrive as
+        // "2 Cottenburgstraße" (vendor prepareDeliveryAddress, US-style) —
+        // normalize so admin/OM/receipts/mails show one consistent format.
+        // Existing rows: jamasa migration 2026_07_24_000001 (same helper).
+        \Igniter\User\Models\Address::extend(function (\Igniter\User\Models\Address $model): void {
+            $model->bindEvent('model.beforeSave', function () use ($model): void {
+                $model->address_1 = \Jamasa\Core\Helpers\AddressFormat::germanize($model->address_1);
+            });
+        });
+
         // Geocoder-blind rescue orders: stamp a warning into the order comment so
         // the kitchen receipt (prints comments inverted) and the Order Manager
         // show it — the restaurant verifies BEFORE the driver leaves.

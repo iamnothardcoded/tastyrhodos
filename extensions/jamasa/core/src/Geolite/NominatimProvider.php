@@ -139,11 +139,24 @@ class NominatimProvider extends BaseNominatimProvider
             }
             $postcode = $pm[1];
             $city = trim(str_replace($postcode, '', $rest), " \t,");
-        } elseif (preg_match('/^(\d+\s?[a-zA-Z]?)\s+(.+?)\s+(\d{5})$/u', $text, $m)) {
-            // shape C — collapse the "city city" repetition (state == city),
-            // else assume the last token is the city
-            [, $number, $middle, $postcode] = $m;
-            if (preg_match('/^(.*?)\s+(.+?)\s+\2$/u', $middle, $mm)) {
+        } elseif (preg_match('/^(\d+\s?[a-zA-Z]?)\s+(.+?)\s+(\d{5})$/u', $text, $m)
+            || preg_match('/^(?<street>\p{L}.+?)\s+(\d+\s?[a-zA-Z]?)\s+(.+?)\s+(\d{5})$/u', $text, $m2)) {
+            // shape C — the comma-less validation implode. Number-FIRST for
+            // legacy rows ("2 Cottenburgstraße …"), street-first since the
+            // 2026-07-24 German normalization ("Cottenburgstraße 2 …").
+            // Both: collapse the "city city" repetition (state == city),
+            // else assume the last token is the city.
+            if (isset($m2['street'])) {
+                [, $street0, $number, $middle, $postcode] = $m2;
+            } else {
+                [, $number, $middle, $postcode] = $m;
+                $street0 = null;
+            }
+            if ($street0 !== null) {
+                // street already isolated — middle is city (possibly doubled)
+                $street = trim($street0);
+                $city = preg_match('/^(.+?)\s+\1$/u', trim($middle), $mm) ? trim($mm[1]) : trim($middle);
+            } elseif (preg_match('/^(.*?)\s+(.+?)\s+\2$/u', $middle, $mm)) {
                 $street = trim($mm[1]);
                 $city = trim($mm[2]);
             } else {
