@@ -16,6 +16,19 @@ return [
 
     'closed' => [
         'browse_menu' => 'Feel free to browse the menu in the meantime.',
+        'opens_at' => 'We open again at %s – feel free to browse the menu until then.',
+    ],
+
+    // Closed/paused acknowledge-overlay (arrival modal; banners above stay).
+    'overlay' => [
+        'closed_title' => 'Currently closed',
+        'closed_text' => 'We open again at %s – see you then!',
+        'closed_text_notime' => 'Please check back later!',
+        'closed_browse' => 'Browse the menu',
+        'pause_browse' => 'View the menu',
+        'auto_check' => 'This page checks automatically – as soon as we\'re back, you can order right away.',
+        'resumed_toast' => 'Ordering is possible again!',
+        'sheet_locked' => 'Ordering is currently not possible.',
     ],
 
     'cart' => [

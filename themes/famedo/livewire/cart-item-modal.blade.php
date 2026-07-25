@@ -88,6 +88,9 @@
                     !!}</span>
                     <span x-text="total"></span>
                 </button>
+                {{-- Shown INSTEAD of qty/btn-add while body.ordering-paused/-closed
+                     (lockout CSS hides them) — explains the missing add button. --}}
+                <div class="sheet__locked">@lang('jamasa.core::default.overlay.sheet_locked')</div>
             </div>
         </div>
     </form>

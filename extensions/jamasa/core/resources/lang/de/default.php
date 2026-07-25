@@ -15,6 +15,19 @@ return [
 
     'closed' => [
         'browse_menu' => 'Stöber gern schon in der Karte.',
+        'opens_at' => 'Wir öffnen wieder um %s – stöber gern schon in der Karte.',
+    ],
+
+    // Geschlossen/Pause-Overlay (Ankunfts-Modal; die Banner oben bleiben).
+    'overlay' => [
+        'closed_title' => 'Gerade geschlossen',
+        'closed_text' => 'Wir öffnen wieder um %s – dann sind wir wieder für dich da!',
+        'closed_text_notime' => 'Schau später gern wieder vorbei!',
+        'closed_browse' => 'Menü entdecken',
+        'pause_browse' => 'Menü ansehen',
+        'auto_check' => 'Die Seite prüft automatisch – sobald es weitergeht, kannst du direkt bestellen.',
+        'resumed_toast' => 'Bestellen ist wieder möglich!',
+        'sheet_locked' => 'Gerade sind leider keine Bestellungen möglich.',
     ],
 
     'cart' => [

@@ -598,6 +598,46 @@ body.famedo{
 .famedo .famedo-card{background:var(--surface);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-sm);margin:12px}
 .famedo .card{border:none;border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
 
+/* ---------- Closed/Paused acknowledge-overlay + ordering lockout ---------- */
+/* Veil + card, shared by „Geschlossen" and „Kurze Pause"
+   (markup: includes/ordering-overlay.blade.php; behavior: famedo.js).
+   z-index: above cartbar(40)/tabs(30), below Bootstrap modals + #orange-modal(9999). */
+.famedo .closed-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(240,240,242,.75);backdrop-filter:blur(7px) grayscale(.5);-webkit-backdrop-filter:blur(7px) grayscale(.5);padding:24px}
+.famedo .closed-overlay.show{display:flex}
+.famedo .closed-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:28px 24px;max-width:340px;width:100%;text-align:center}
+.famedo .closed-card__ic{width:58px;height:58px;border-radius:50%;background:#33363C;color:#fff;display:grid;place-items:center;margin:0 auto 14px}
+.famedo .closed-card__ic svg{width:26px;height:26px}
+.famedo .closed-card__t{font-family:var(--font-head);font-weight:800;font-size:20px}
+.famedo .closed-card__s{color:var(--muted);font-size:13.5px;line-height:1.5;margin:8px 0 18px}
+.famedo .closed-card__s b{color:var(--ink);font-weight:700}
+.famedo .closed-card__note{margin:14px 0 0;font-size:11.5px}
+.famedo .closed-card__btn{width:100%;padding:13px;border:none;border-radius:var(--r-sm);background:var(--brand);color:#fff;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(200,80,10,.25)}
+.famedo .closed-card__btn:active{transform:scale(.98)}
+.famedo .pause-ic{background:var(--brand-tint)!important;color:var(--brand-deep)!important}
+
+/* Resume toast (green, top center) — famedo- prefixed; bare .toast is Bootstrap's */
+.famedo .famedo-toast{position:fixed;left:50%;top:14px;z-index:1200;transform:translateX(-50%) translateY(-140%);background:#2F7040;color:#fff;font-weight:700;font-size:13.5px;padding:12px 18px;border-radius:var(--r-sm);box-shadow:var(--shadow-lg);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.famedo .famedo-toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Ordering lockout while closed/paused — visual honesty only, the server
+   blocks regardless (schedule forced closed → validateOrderTime rejects).
+   Cartbar: class-hide ONLY — never @if-remove it (Alpine teleport crash). */
+body.ordering-paused .addbtn,body.ordering-closed .addbtn{opacity:.35;pointer-events:none}
+body.ordering-paused .toggle,body.ordering-closed .toggle,
+body.ordering-paused .mode__info,body.ordering-closed .mode__info{opacity:.45;pointer-events:none}
+body.ordering-paused .cartbar,body.ordering-closed .cartbar{display:none!important}
+body.ordering-paused [data-control="cart-item"] .qty,body.ordering-closed [data-control="cart-item"] .qty,
+body.ordering-paused [data-control="cart-item"] .btn-add,body.ordering-closed [data-control="cart-item"] .btn-add{display:none}
+/* Simple items add directly on ROW click (wire:click on [data-control="menu-item"]).
+   While locked, famedo.js intercepts that click (capture phase) and shows the
+   state-aware .famedo-toast--warn instead — dead rows read as "broken", and the
+   server's generic after-hours wording is wrong during a pause.
+   Option items ([data-toggle="orange-modal"]) stay clickable: browsing the sheet is wanted. */
+.famedo .famedo-toast--warn{background:var(--brand-deep)}
+/* Item-sheet note replacing the hidden qty/btn-add while locked */
+.famedo .sheet__locked{display:none;flex:1;text-align:center;padding:12px;border-radius:var(--r-sm);background:var(--surface-2);color:var(--muted);font-weight:600;font-size:13.5px}
+body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-closed [data-control="cart-item"] .sheet__locked{display:block}
+
 /* ---------- Misc ---------- */
 .famedo .badge{font-family:var(--font-body)}
 @media (prefers-reduced-motion:reduce){

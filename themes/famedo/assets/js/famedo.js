@@ -397,3 +397,82 @@
         }
     }, {passive: true});
 })();
+
+/* ---------------------------------------------------------------
+ * Ordering overlay (closed/paused): dismiss + resume-poll + toast.
+ * Server renders overlay + body.ordering-* (layout); the partial's
+ * inline script does the initial sessionStorage ack check so the
+ * overlay never flashes. Here: dismiss buttons, the ~30s status
+ * poll (reload on any state change; fresh server render beats DOM
+ * surgery — banner/mode-info/Livewire state are server-rendered),
+ * and the green toast on the reloaded open page.
+ * --------------------------------------------------------------- */
+(function () {
+    var ACK = 'famedo-ack-', RESUMED = 'famedo-resumed';
+    var store = {
+        get: function (k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+        set: function (k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+        del: function (k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+    };
+
+    var overlay = document.getElementById('famedoOrderingOverlay');
+    var state = overlay ? overlay.getAttribute('data-famedo-ordering-state') : 'open';
+
+    if (state === 'open') {
+        // Freshly reloaded after a resume? Show the toast once.
+        if (!store.get(RESUMED)) return;
+        store.del(RESUMED);
+        var toast = document.getElementById('famedoResumedToast');
+        if (!toast) return;
+        requestAnimationFrame(function () { toast.classList.add('show'); });
+        setTimeout(function () { toast.classList.remove('show'); }, 3500);
+        return;
+    }
+
+    // Dismiss -> browse (banner + lockout stay; once per session per state)
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('[data-famedo-overlay-dismiss]');
+        if (!btn) return;
+        store.set(ACK + state, '1');
+        overlay.classList.remove('show');
+    });
+
+    // Simple items add-to-cart on ROW click (wire:click). While locked, swallow
+    // the click BEFORE Livewire sees it (capture phase on document runs first;
+    // stopPropagation keeps it from ever reaching the row) and answer with the
+    // state-aware toast — the server's generic wording ("outside our hours")
+    // is wrong during a pause, and a dead row reads as "broken".
+    var lockedMsg = overlay.getAttribute('data-locked-toast') || '';
+    var warnToast = null;
+    document.addEventListener('click', function (e) {
+        var row = e.target.closest && e.target.closest('[data-control="menu-item"]');
+        if (!row) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (!lockedMsg) return;
+        if (!warnToast) {
+            warnToast = document.createElement('div');
+            warnToast.className = 'famedo-toast famedo-toast--warn';
+            warnToast.setAttribute('role', 'status');
+            warnToast.textContent = lockedMsg;
+            document.body.appendChild(warnToast);
+        }
+        requestAnimationFrame(function () { warnToast.classList.add('show'); });
+        clearTimeout(warnToast._famedoTimer);
+        warnToast._famedoTimer = setTimeout(function () { warnToast.classList.remove('show'); }, 3000);
+    }, true);
+
+    // Poll while not open; on any state change reload for a fresh render.
+    setInterval(function () {
+        fetch('/jamasa/ordering-status', {headers: {Accept: 'application/json'}})
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.state || data.state === state) return;
+                store.del(ACK + 'paused');
+                store.del(ACK + 'closed');
+                if (data.state === 'open') store.set(RESUMED, '1');
+                location.reload();
+            })
+            .catch(function () { /* offline/hiccup -> next tick */ });
+    }, 30000);
+})();

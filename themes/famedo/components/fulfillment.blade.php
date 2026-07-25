@@ -78,12 +78,23 @@
                 <div class="pausebar__s">{{ \Jamasa\Core\Helpers\OrderingState::message() }}</div>
             </div>
         </div>
-    @elseif (!$activeOrderType || $activeOrderType->isDisabled())
+    @elseif (!$activeOrderType || $activeOrderType->isDisabled() || !$activeOrderType->getSchedule()->isOpen())
+        {{-- Admin-disabled OR after-hours (isDisabled() is only the admin toggle) —
+             both show the dark closedbar; next-open time when the schedule has one. --}}
         <div class="closedbar">
             <div class="closedbar__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
             <div>
                 <div class="closedbar__t">@lang('igniter.cart::default.text_is_closed')</div>
-                <div class="closedbar__s">@lang('jamasa.core::default.closed.browse_menu')</div>
+                @php($cbNextOpen = ($activeOrderType && ($cbOpenTime = $activeOrderType->getSchedule()->getOpenTime()))
+                    ? make_carbon($cbOpenTime)->isoFormat(lang('system::lang.moment.day_time_format_short'))
+                    : null)
+                <div class="closedbar__s">
+                    @if ($cbNextOpen)
+                        {{ sprintf(lang('jamasa.core::default.closed.opens_at'), $cbNextOpen) }}
+                    @else
+                        @lang('jamasa.core::default.closed.browse_menu')
+                    @endif
+                </div>
             </div>
         </div>
     @else

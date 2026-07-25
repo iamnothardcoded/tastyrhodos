@@ -292,6 +292,12 @@ class Extension extends BaseExtension
         Route::middleware(['web', 'throttle:15,1'])
             ->get('jamasa/address-zone-check', \Jamasa\Core\Http\Controllers\AddressZoneCheckController::class);
 
+        // Public (anonymous) ordering-state poll for the closed/paused overlay —
+        // the storefront checks ~2x/min while ordering is unavailable and reloads
+        // on a state change. Returns only {state, message}; fails open as 'open'.
+        Route::middleware(['web', 'throttle:60,1'])
+            ->get('jamasa/ordering-status', \Jamasa\Core\Http\Controllers\OrderingStatusController::class);
+
         // Confine owner-scoped tokens to api/jamasa/* on EVERY /api/* request.
         // TI's stock API authorizes admin resources by tokenable TYPE and ignores
         // abilities, so without this an owner token (minted on an admin user)
