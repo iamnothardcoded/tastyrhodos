@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Iamnothardcoded\TaxClasses\CartConditions;
 
+use Iamnothardcoded\TaxClasses\Classes\DiscountAllocator;
 use Iamnothardcoded\TaxClasses\Classes\TaxClassResolver;
 use Iamnothardcoded\TaxClasses\Models\TaxClassSettings;
 use Igniter\Cart\CartCondition;
 use Igniter\Cart\CartContent;
 use Igniter\Cart\CartItem;
+use Igniter\Cart\Facades\Cart;
 use Igniter\Local\Facades\Location;
 use Igniter\System\Models\Currency;
 use Override;
@@ -79,7 +81,16 @@ abstract class AbstractTaxClassCondition extends CartCondition
     #[Override]
     public function calculate($subTotal)
     {
-        $base = $this->classBase();
+        $bases = $this->classBases();
+        $base = $bases[$this->taxClass] ?? 0.0;
+
+        // Cart-level discounts applied before us (signup discount, whole-cart
+        // coupon) reduce the Entgelt — shrink the per-class bases pro-rata
+        // (§ 10 UStG; largest-remainder so the shares sum exactly to D).
+        if (($discount = $this->cartLevelDiscount()) > 0) {
+            $share = DiscountAllocator::allocate($discount, $bases)[$this->taxClass] ?? 0.0;
+            $base = max(0.0, $base - $share);
+        }
 
         if ($this->taxesDelivery && Location::orderTypeIsDelivery()) {
             $base += (float)Location::coveredArea()->deliveryAmount($subTotal);
@@ -94,6 +105,13 @@ abstract class AbstractTaxClassCondition extends CartCondition
 
     protected function classBase(): float
     {
+        return $this->classBases()[$this->taxClass] ?? 0.0;
+    }
+
+    /** @return array<string, float> class => gross item base (item-level
+     *  conditions included, cart-level conditions not — see cartLevelDiscount) */
+    protected function classBases(): array
+    {
         /** @var CartContent $content */
         $content = $this->target;
 
@@ -101,7 +119,47 @@ abstract class AbstractTaxClassCondition extends CartCondition
             $content->map(fn(CartItem $item) => $item->id)->unique()->values()->all(),
         );
 
-        return (float)$content->sum(fn(CartItem $item): float => ($classes[(int)$item->id] ?? TaxClassResolver::defaultClass()) === $this->taxClass
-                ? (float)$item->subtotal : 0.0);
+        $bases = array_fill_keys(TaxClassResolver::CLASSES, 0.0);
+        $content->each(function(CartItem $item) use ($classes, &$bases): void {
+            $class = $classes[(int)$item->id] ?? TaxClassResolver::defaultClass();
+            $bases[$class] += (float)$item->subtotal;
+        });
+
+        return $bases;
+    }
+
+    /**
+     * Total cart-level discount already applied in this pass. Conditions with a
+     * lower priority ran before us and their calculatedValue is final — the
+     * instances are shared and mutated in place during CartConditions::apply().
+     * conditionsWithoutApplied() is the non-reentrant accessor (Cart::conditions()
+     * would re-run the whole apply reduce from inside it). Discounts are the
+     * conditions reporting a negative getValue(); additive conditions
+     * (delivery/tip) report positive, unapplied ones 0. Item-scoped coupons
+     * never apply at cart level and already live inside $item->subtotal, so
+     * they are correctly not counted here.
+     */
+    protected function cartLevelDiscount(): float
+    {
+        $ownPriority = (int)($this->priority ?? 0);
+
+        return (float)Cart::conditionsWithoutApplied()
+            ->filter(function(CartCondition $condition) use ($ownPriority): bool {
+                if ((int)($condition->getPriority() ?? 0) >= $ownPriority) {
+                    return false;
+                }
+
+                // Delivery-fee coupons discount the delivery charge, not the
+                // items — don't shrink the item bases with them (the VAT on the
+                // delivery charge itself stays un-reduced: documented edge).
+                if (class_exists(\Igniter\Coupons\CartConditions\Coupon::class)
+                    && $condition instanceof \Igniter\Coupons\CartConditions\Coupon
+                    && $condition->getModel()?->appliesOnDelivery()) {
+                    return false;
+                }
+
+                return (float)$condition->getValue() < 0;
+            })
+            ->sum(fn(CartCondition $condition): float => -(float)$condition->getValue());
     }
 }

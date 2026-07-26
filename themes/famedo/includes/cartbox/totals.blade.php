@@ -9,7 +9,7 @@
 
     @foreach ($cart->conditions() as $id => $condition)
         @continue(!$previewMode && $id === 'tip' && $tipConditionValue = $condition->getValue())
-        <div @class(['row', 'disc' => in_array($id, ['coupon'])])>
+        <div @class(['row', 'disc' => in_array($id, ['coupon', 'signup_discount'])])>
             <span>
                 {{ $condition->getLabel() }}:
                 @if (!$previewMode && $condition->removeable)

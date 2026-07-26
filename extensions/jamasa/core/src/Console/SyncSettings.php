@@ -61,6 +61,7 @@ class SyncSettings extends Command
         $this->syncTheme();
         $this->syncPaymentsAndStatuses();
         $this->syncTaxConditions();
+        $this->syncSignupDiscountConditions();
         $this->syncLegalPagesAndGdprLink();
         $this->syncFooterAndMainNav();
 
@@ -216,6 +217,43 @@ class SyncSettings extends Command
         \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
 
         $this->line('  ✓ tax conditions: core VAT off, tax classes 7%/19% on');
+    }
+
+    /** Signup discount (registered-customer discounts) runs at 104 — after
+     *  delivery/tip (100), before the tax-class conditions (110/115) so the VAT
+     *  bases shrink pro-rata. The native coupon is re-prioritized 200 → 105 for
+     *  the same reason (also fixes coupon's breach of the order_totals tinyint
+     *  priority ceiling of 127). */
+    protected function syncSignupDiscountConditions(): void
+    {
+        if (!class_exists(\Iamnothardcoded\SignupDiscounts\Extension::class)) {
+            $this->line('  · signup-discount conditions skipped (signupdiscounts extension not installed)');
+
+            return;
+        }
+
+        $conditions = (array) \Igniter\Cart\Models\CartSettings::get('conditions');
+        $conditions['signup_discount']['status'] = 1;
+        $conditions['signup_discount']['priority'] = 104;
+        $conditions['coupon']['priority'] = 105;
+        \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
+
+        $this->line('  ✓ signup_discount on @104, coupon re-prioritized @105 (both before tax classes)');
+
+        // The register→discount moment needs auto-login; an approval-required
+        // default customer group breaks it. Warn only — per-tenant decision.
+        $group = \Igniter\User\Models\CustomerGroup::getDefault();
+        if ($group?->requiresApproval()) {
+            $this->warn("  ! default customer group '{$group->group_name}' requires approval — new accounts won't auto-login, the signup discount won't appear right after registration");
+        }
+
+        // Enabled coupons are LIVE discount codes (demo data seeds some).
+        if (class_exists(\Igniter\Coupons\Models\Coupon::class)) {
+            $codes = \Igniter\Coupons\Models\Coupon::query()->where('status', 1)->pluck('code');
+            if ($codes->isNotEmpty()) {
+                $this->warn('  ! enabled coupon codes exist: '.$codes->implode(', ').' — verify these are intended (demo seeds must not reach tenants)');
+            }
+        }
     }
 
     /** Seed legal page bodies from the shipped template — guarded so a tenant's

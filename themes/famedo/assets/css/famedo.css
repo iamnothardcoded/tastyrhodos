@@ -220,6 +220,34 @@ body.famedo{
 .famedo .closedbar__t{font-family:var(--font-head);font-weight:800;font-size:14px}
 .famedo .closedbar__s{font-size:12px;opacity:.85;margin-top:1px}
 
+/* ---------- Signup-discount teasers ---------- */
+/* Menu-top welcome-offer banner (guests). Flat brand + design-system shadow. */
+.famedo .promo{display:flex;align-items:center;gap:13px;margin:10px 12px 0;padding:14px 16px;border-radius:var(--r-md);background:var(--brand);color:#fff;text-decoration:none;box-shadow:var(--shadow-md)}
+.famedo .promo:hover{color:#fff}
+.famedo .promo:active{transform:scale(.99)}
+.famedo .promo__ic{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.22);display:grid;place-items:center;flex:none}
+.famedo .promo__ic svg{width:20px;height:20px}
+.famedo .promo__body{display:flex;flex-direction:column;min-width:0}
+.famedo .promo__t{display:block;font-family:var(--font-head);font-weight:800;font-size:14.5px;line-height:1.2}
+.famedo .promo__s{display:block;font-size:11.5px;opacity:.92;margin-top:3px}
+/* In-cart "you'd save X €" strip (guests). Brand = an offer to unlock, NOT an
+   applied discount (green is reserved for discounts the customer actually has). */
+.famedo .cart-save{display:flex;align-items:center;gap:11px;margin:12px 0 0;padding:12px 14px;border-radius:14px;background:var(--brand-tint);color:var(--brand-deep);text-decoration:none}
+.famedo .cart-save:hover{color:var(--brand-deep)}
+.famedo .cart-save:active{transform:scale(.99)}
+.famedo .cart-save__ic{width:34px;height:34px;border-radius:10px;background:#fff;display:grid;place-items:center;flex:none}
+.famedo .cart-save__ic svg{width:18px;height:18px}
+.famedo .cart-save__body{display:flex;flex-direction:column;min-width:0}
+.famedo .cart-save__t{display:block;font-family:var(--font-head);font-weight:800;font-size:13.5px;line-height:1.2}
+.famedo .cart-save__s{display:block;font-size:11.5px;opacity:.85;margin-top:2px}
+/* Logged-in "your discount is active" banner (green, reassuring). */
+.famedo .activeoffer{display:flex;align-items:center;gap:13px;margin:10px 12px 0;padding:13px 16px;border-radius:var(--r-md);background:var(--veg-tint);color:var(--veg);box-shadow:var(--shadow-sm)}
+.famedo .activeoffer__ic{width:36px;height:36px;border-radius:10px;background:#fff;display:grid;place-items:center;flex:none}
+.famedo .activeoffer__ic svg{width:19px;height:19px}
+.famedo .activeoffer__body{display:flex;flex-direction:column;min-width:0}
+.famedo .activeoffer__t{display:block;font-family:var(--font-head);font-weight:800;font-size:14px;line-height:1.2}
+.famedo .activeoffer__s{display:block;font-size:11.5px;opacity:.85;margin-top:2px}
+
 /* ---------- Sticky category tabs (components/category-list) ---------- */
 .famedo .famedo-tabs{
   position:sticky;top:0;z-index:30;background:#fff;

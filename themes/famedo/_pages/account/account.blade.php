@@ -9,6 +9,18 @@ security: customer
     <div class="account-hub">
         <h1 class="account-hub__greet">Hallo{{ $firstName ? ', '.e($firstName) : '' }}</h1>
         <p class="account-hub__lead">Dein Konto — verwalte deine Daten, Adressen und Bestellungen.</p>
+        @if(class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class)
+            && ($activeOffer = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::activeOfferFor(\Igniter\User\Facades\Auth::customer())))
+            <div class="activeoffer" style="margin:0 0 20px">
+                <span class="activeoffer__ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="activeoffer__body">
+                    <span class="activeoffer__t">{{ $activeOffer['headline'] }}</span>
+                    <span class="activeoffer__s">{{ $activeOffer['subline'] }}</span>
+                </span>
+            </div>
+        @endif
         <div class="account-hub__grid">
             <a class="account-tile" href="{{ page_url('account.profile') }}">
                 <span class="account-tile__ic"><i class="fa fa-user"></i></span>

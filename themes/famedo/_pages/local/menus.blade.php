@@ -23,6 +23,40 @@ layout: default
     <x-igniter-orange::fulfillment/>
 </header>
 
+{{-- Signup-discount teaser. GUESTS see the welcome offer (links to register);
+     LOGGED-IN customers who currently qualify see a reassuring "your discount is
+     active" banner (with days-left for the window mode). Wording is generated
+     from the extension's settings. --}}
+@if(class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class))
+    @unless(\Igniter\User\Facades\Auth::isLogged())
+        @php($signupTeaser = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::welcomeTeaser())
+        @if($signupTeaser)
+            <a class="promo" href="{{ page_url('account.register') }}?redirect={{ urlencode(url()->current()) }}">
+                <span class="promo__ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M12 8C11 5 9 4 7.6 4.8 6.2 5.6 6.7 8 12 8zM12 8c1-3 3-4 4.4-3.2C17.8 5.6 17.3 8 12 8z"/></svg>
+                </span>
+                <span class="promo__body">
+                    <span class="promo__t">{{ $signupTeaser['headline'] }}</span>
+                    <span class="promo__s">{{ $signupTeaser['subline'] }}</span>
+                </span>
+            </a>
+        @endif
+    @else
+        @php($activeOffer = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::activeOfferFor(\Igniter\User\Facades\Auth::customer()))
+        @if($activeOffer)
+            <div class="activeoffer">
+                <span class="activeoffer__ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="activeoffer__body">
+                    <span class="activeoffer__t">{{ $activeOffer['headline'] }}</span>
+                    <span class="activeoffer__s">{{ $activeOffer['subline'] }}</span>
+                </span>
+            </div>
+        @endif
+    @endunless
+@endif
+
 <div class="famedo-tabs sticky-top">
     <x-igniter-orange::category-list/>
 </div>
@@ -47,3 +81,33 @@ layout: default
 </div>
 
 <livewire:igniter-orange::fulfillment-modal/>
+
+{{-- Just came back from registering with a cart? Pop the cart sheet open so the
+     new customer can finish the order and see their discount applied. --}}
+@if(request()->query('welcome') && \Igniter\Cart\Facades\Cart::content()->count() > 0)
+    <script>
+    (function () {
+        function openCart() {
+            var el = document.getElementById('famedo-cart-canvas');
+            if (el && window.bootstrap && bootstrap.Offcanvas) {
+                bootstrap.Offcanvas.getOrCreateInstance(el).show();
+                return true;
+            }
+            return false;
+        }
+        function cleanUrl() {
+            if (window.history && history.replaceState) {
+                var u = new URL(window.location);
+                u.searchParams.delete('welcome');
+                history.replaceState(null, '', u);
+            }
+        }
+        window.addEventListener('load', function () {
+            if (openCart()) { cleanUrl(); return; }
+            var tries = 0, t = setInterval(function () {
+                if (openCart() || ++tries > 40) { clearInterval(t); cleanUrl(); }
+            }, 80);
+        });
+    })();
+    </script>
+@endif

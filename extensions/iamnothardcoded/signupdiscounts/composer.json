@@ -1,0 +1,34 @@
+{
+    "name": "iamnothardcoded/ti-ext-signupdiscounts",
+    "type": "tastyigniter-package",
+    "description": "Automatic discounts that drive account sign-ups: welcome discount on the first order (or the first X days), plus time-limited promos for all registered customers.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "iamnothardcoded"
+        }
+    ],
+    "require": {
+        "tastyigniter/core": "^v4.0",
+        "tastyigniter/ti-ext-cart": "^v4.0",
+        "tastyigniter/ti-ext-user": "^v4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Iamnothardcoded\\SignupDiscounts\\": "src/"
+        }
+    },
+    "extra": {
+        "tastyigniter-extension": {
+            "code": "iamnothardcoded.signupdiscounts",
+            "name": "Signup Discounts",
+            "icon": {
+                "class": "fa fa-bullhorn",
+                "color": "#fff",
+                "backgroundColor": "#e67e22"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

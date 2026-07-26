@@ -47,8 +47,15 @@ automatically.
   category wins. Set the class on the item itself to be explicit.
 - **§19 UStG (Kleinunternehmer) / no VAT display:** disable both tax-class
   conditions in the Cart Conditions tab — no tax lines are shown anywhere.
-- **Coupons:** v1 computes VAT from the items' gross subtotals; a cart-level
-  coupon does not reduce the VAT base proportionally.
+- **Discounts/Coupons (since v1.1):** the tax lines are discount-aware — any
+  cart-level discount condition applied *before* the tax conditions (priority
+  below 110) shrinks the per-class VAT bases pro-rata (largest-remainder split,
+  still one rounding per class). ⚠️ The native coupon's default priority is 200
+  (after tax) — set it below 110 in *Cart Settings → Cart Conditions* to get
+  discount-aware VAT. Item-scoped (menu-item) coupons are always correct (they
+  reduce the item subtotals directly). Delivery-fee coupons are excluded from
+  the allocation: the VAT on the delivery charge itself is not reduced
+  (documented edge case).
 - **PayPal:** the itemized tax field in PayPal's order breakdown (populated only
   for a condition literally named `tax`) stays empty. Charged amounts are correct.
 - Your fiscal system (e.g. TSE-Kasse) remains authoritative for tax reporting;
