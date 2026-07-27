@@ -2,6 +2,9 @@
     <ul class="nav navbar-nav">
         @foreach ($menuItems as $navItem)
             @continue(Auth::isLogged() && in_array($navItem->code, ['login', 'register']))
+            {{-- „Registrieren" is redundant: the email-code /login signs up
+                 unknown emails automatically — one entry („Anmelden") suffices. --}}
+            @continue($navItem->code === 'register')
             @continue(!Auth::isLogged() && in_array($navItem->code, ['account', 'recent-orders']))
             @continue($navItem->code === 'reservation' && !\Igniter\Local\Facades\Location::current()?->getSettings('booking.is_enabled', false))
             <li

@@ -10,4 +10,18 @@ permalink: /checkout/success/:hash?
 {{-- famedo page (forked from ti-theme-orange v4.1.3 _pages/checkout/success) --}}
 <div class="famedo-page">
     <livewire:igniter-orange::order-preview />
+
+    {{-- Guest who just ordered? Offer an instant account (their order details are
+         already there — they only pick a password) so next time the discount
+         applies. Renders nothing for logged-in customers / non-guest orders. --}}
+    <livewire:jamasa::signup-from-order />
 </div>
+
+{{-- Per-order fields (sessionStorage, checkout tab-fields) die with the
+     completed order — the next order starts fresh (phone from the account,
+     both notes empty; sticky driver note deferred to the address-bound TODO). --}}
+<script>
+sessionStorage.removeItem('checkout_order_phone');
+sessionStorage.removeItem('checkout_order_note');
+sessionStorage.removeItem('checkout_delivery_note');
+</script>

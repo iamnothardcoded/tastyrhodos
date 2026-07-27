@@ -36,8 +36,13 @@
             <x-igniter-orange::forms.form class="w-100" wire:submit="onConfirm">
                 <div class="modal-content" x-data="FamedoAddress()">
                     <div class="modal-header px-4 border-bottom-0">
-                        <h5 class="modal-title sheet__title fs-5"
-                            id="fulfillmentModalLabel">@lang('igniter.orange::default.text_control_title')</h5>
+                        {{-- Intent-scoped titles; body.famedo-addr-only /
+                             body.famedo-time-only swap them via CSS. --}}
+                        <h5 class="modal-title sheet__title fs-5" id="fulfillmentModalLabel">
+                            <span class="fm-title-default">@lang('igniter.orange::default.text_control_title')</span>
+                            <span class="fm-title-addr">Lieferadresse ändern</span>
+                            <span class="fm-title-time">Zeit wählen</span>
+                        </h5>
                         <button type="button" class="btn-close famedo-sheet-close" data-bs-dismiss="modal" aria-label="{{ __('jamasa.core::default.ui.close') }}"></button>
                     </div>
                     <div class="modal-body p-4 py-2">
@@ -101,13 +106,16 @@
                             @endif
                         </div>
                         @unless($hideDeliveryAddress)
-                            <div x-cloak x-show="!hideDeliveryAddress" class="pb-3 position-relative">
+                            <div x-cloak x-show="!hideDeliveryAddress" class="pb-3 position-relative famedo-fm-addr">
                                 <h6 class="my-3">
                                     <i class="fa fa-map-pin"></i>&nbsp;&nbsp;
                                     @lang('igniter.orange::default.text_delivering_to')
                                     @unless($previewMode)
+                                        {{-- „ändern" = START OVER: clears the query, opens the
+                                             picker blank + focused (tap the address box below
+                                             instead to EDIT the current address). --}}
                                         <a
-                                            wire:click="onChangeDeliveryAddress"
+                                            x-on:click="$wire.set('searchQuery', '', false); $wire.onChangeDeliveryAddress().then(() => setTimeout(() => document.getElementById('search-query')?.focus(), 60))"
                                             role="button"
                                             class="small text-primary"
                                         >@lang('igniter.local::default.search.text_change')</a>
@@ -174,7 +182,16 @@
                                         @include('igniter-orange::includes.local.saved-address-picker')
                                     </div>
                                 @else
-                                    <div class="p-2 border rounded bg-white w-100" wire:key="famedo-addr-display">
+                                    {{-- Tap-to-edit: the whole box opens the picker WITH the
+                                         current address, cursor ready (an inert-looking text box
+                                         that rejects taps reads as broken). --}}
+                                    <div
+                                        class="p-2 border rounded bg-white w-100 famedo-addr-display"
+                                        role="button"
+                                        tabindex="0"
+                                        wire:key="famedo-addr-display"
+                                        x-on:click="$wire.onChangeDeliveryAddress().then(() => setTimeout(() => document.getElementById('search-query')?.focus(), 60))"
+                                    >
                                         <div
                                             class="pe-2 fw-bold text-truncate"
                                         >{{ $searchQuery ?? $deliveryAddress ?? lang('igniter.local::default.alert_no_search_query') }}</div>

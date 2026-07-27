@@ -120,10 +120,12 @@
                     {{ $orderDateTime->isoFormat(lang('system::lang.moment.day_time_format')) }}
                 @endif
             @endif
+            {{-- time entrance → time-only modal (no address section) --}}
             &nbsp;<a
                 role="button"
                 data-bs-toggle="modal"
                 data-bs-target="#fulfillmentModal"
+                data-famedo-time-only="1"
             >@lang('igniter.local::default.search.text_change')</a>
         </p>
     @endif

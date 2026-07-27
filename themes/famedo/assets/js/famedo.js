@@ -476,3 +476,91 @@
             .catch(function () { /* offline/hiccup -> next tick */ });
     }, 30000);
 })();
+
+/* ---------- Address-only fulfillment modal (checkout „Adresse ändern") ----------
+   When the fulfillment modal is opened from the checkout address row
+   (trigger carries data-famedo-addr-only), hide the timeslot section —
+   changing the address mid-checkout shouldn't re-ask ASAP/time. The marker
+   class lives on <body> (outside Livewire's morph reach, so re-renders inside
+   the modal can't strip it); CSS does the hiding. */
+(function () {
+    /* Intent-scoped modal: address row → address-only; „Zeit ändern" link →
+       time-only; the Liefern/Abholen pill → full modal. In every mode that
+       SHOWS the address, the picker opens pre-expanded (search prefilled +
+       saved addresses + manual link — no dead display-box step). Deliberately
+       NOT auto-focused: the phone keyboard would cover the saved-address list. */
+    var fmInitialQuery = null;
+    document.addEventListener('show.bs.modal', function (e) {
+        if (e.target && e.target.id === 'fulfillmentModal') {
+            var rel = e.relatedTarget;
+            var addrOnly = rel && rel.closest && rel.closest('[data-famedo-addr-only]');
+            var timeOnly = rel && rel.closest && rel.closest('[data-famedo-time-only]');
+            document.body.classList.toggle('famedo-addr-only', !!addrOnly);
+            document.body.classList.toggle('famedo-time-only', !timeOnly ? false : !addrOnly);
+            if (window.Livewire) {
+                var root = e.target.closest('[wire\\:id]');
+                var comp = root && Livewire.find(root.getAttribute('wire:id'));
+                if (comp) {
+                    fmInitialQuery = comp.get('searchQuery');
+                    if (!timeOnly) comp.call('onChangeDeliveryAddress');
+                }
+            }
+        }
+    });
+    /* Confirm cost guard: the vendor's onConfirm geocodes the address (a LIVE
+       Nominatim call, 1–3+s) whenever the picker flag is open — even when only
+       the time changed. If the address text is untouched since the modal
+       opened (or we're in time-only mode), drop the flag with a DEFERRED set
+       (rides the same confirm request) so the geocode is skipped. A genuinely
+       changed address keeps the flag → zone check runs as it must. */
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.closest || !form.closest('#fulfillmentModal') || !window.Livewire) return;
+        var root = form.closest('[wire\\:id]');
+        var comp = root && Livewire.find(root.getAttribute('wire:id'));
+        if (!comp) return;
+        var timeOnly = document.body.classList.contains('famedo-time-only');
+        var unchanged = fmInitialQuery !== null && comp.get('searchQuery') === fmInitialQuery;
+        if (timeOnly || unchanged) {
+            comp.set('showAddressPicker', false, false);
+        }
+    }, true);
+    document.addEventListener('hidden.bs.modal', function (e) {
+        if (e.target && e.target.id === 'fulfillmentModal') {
+            document.body.classList.remove('famedo-addr-only');
+            document.body.classList.remove('famedo-time-only');
+        }
+    });
+})();
+
+/* ---------- Checkout notes: „+ Anmerkung hinzufügen" (collapse) ----------
+   The notes row (comment/delivery_comment) is hidden until the customer asks
+   for it — or until a note HAS content (draft order comment, localStorage
+   restore), which force-opens it so typed text is never hidden. State =
+   body class famedo-notes-open (outside Livewire's morph reach). */
+(function () {
+    document.addEventListener('click', function (e) {
+        var t = e.target.closest && e.target.closest('[data-famedo-notes-toggle]');
+        if (!t) return;
+        document.body.classList.add('famedo-notes-open');
+        setTimeout(function () {
+            var ta = document.querySelector('.co-notes textarea');
+            if (ta) ta.focus();
+        }, 30);
+    });
+    function syncNotes() {
+        if (document.body.classList.contains('famedo-notes-open')) return;
+        var any = ['comment', 'delivery_comment'].some(function (n) {
+            var el = document.querySelector('[data-checkout-control="' + n + '"]');
+            return el && el.value && el.value.trim() !== '';
+        });
+        if (any) document.body.classList.add('famedo-notes-open');
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncNotes);
+    } else {
+        syncNotes();
+    }
+    /* catches localStorage-restored + Livewire-morphed content */
+    setInterval(syncNotes, 1500);
+})();

@@ -14,6 +14,10 @@ use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
 use Jamasa\Core\Listeners\AutoAcceptOrder;
 use Jamasa\Core\Listeners\PauseWorkingSchedule;
+use Jamasa\Core\Livewire\AccountSettings;
+use Jamasa\Core\Livewire\EmailCodeLogin;
+use Jamasa\Core\Livewire\SignupFromOrder;
+use Livewire\Livewire;
 use Override;
 
 /**
@@ -72,6 +76,18 @@ class Extension extends BaseExtension
         // — the overrides silently never applied), and appending to
         // 'igniter.cart' would lose to the vendor path registered first.
         $this->app['view']->prependNamespace('igniter.cart', __DIR__.'/../resources/views/igniter-cart');
+
+        // Jamasa's own views (the `jamasa::` namespace) + Livewire components.
+        $this->app['view']->addNamespace('jamasa', __DIR__.'/../resources/views');
+        // Inline "create an account from your order" prompt on the success page
+        // (guest-only; the storefront success page includes it). See SignupFromOrder.
+        Livewire::component('jamasa::signup-from-order', SignupFromOrder::class);
+        // Passwordless email-code login — mounted by the famedo /login page
+        // override in place of orange's password login. See EmailCodeLogin.
+        Livewire::component('jamasa::email-code-login', EmailCodeLogin::class);
+        // Profile settings with immutable email + return-to-checkout — mounted
+        // by the famedo profile page instead of the vendor component.
+        Livewire::component('jamasa::account-settings', AccountSettings::class);
 
         // Register Blade directive for pickup code
         // Usage in views: @pickupCode($order->hash)
@@ -218,6 +234,55 @@ class Extension extends BaseExtension
             } elseif (!$isRescue && $hasNote) {
                 $order->comment = trim(str_replace($note, '', (string)$order->comment));
                 $order->saveQuietly();
+            }
+        });
+
+        // Keep order ↔ customer identity consistent at checkout (passwordless
+        // email-code accounts start completely EMPTY; returning customers see the
+        // identity CARD instead of fields — famedo tab-fields).
+        // ORDER-side enforcement: the order's email is ALWAYS the account email
+        // (the checkout email is not an editable identity for logged-in users);
+        // blank order names fill from the profile (card variant posts no name).
+        // PROFILE-side sync: names SYNC from every order that provides them —
+        // a name is stable identity and checkout is where typos get corrected.
+        // The profile phone is FILL-ONLY: an order phone can be situational
+        // (dead battery, partner's number) and never overwrites the profile.
+        Event::listen('igniter.checkout.afterSaveOrder', function ($order): void {
+            if (!$order instanceof \Igniter\Cart\Models\Order || !$order->customer_id
+                || !($customer = $order->customer)) {
+                return;
+            }
+
+            $orderDirty = false;
+            if (filled($customer->email) && $order->email !== $customer->email) {
+                $order->email = $customer->email;
+                $orderDirty = true;
+            }
+            foreach (['first_name', 'last_name', 'telephone'] as $field) {
+                if (blank($order->{$field}) && filled($customer->{$field})) {
+                    $order->{$field} = $customer->{$field};
+                    $orderDirty = true;
+                }
+            }
+            if ($orderDirty) {
+                $order->saveQuietly();
+            }
+
+            $dirty = false;
+            foreach (['first_name', 'last_name'] as $field) {
+                if (filled($order->{$field}) && $customer->{$field} !== $order->{$field}) {
+                    $customer->{$field} = $order->{$field};
+                    $dirty = true;
+                }
+            }
+
+            if (blank($customer->telephone) && filled($order->telephone)) {
+                $customer->telephone = $order->telephone;
+                $dirty = true;
+            }
+
+            if ($dirty) {
+                $customer->saveQuietly();
             }
         });
 

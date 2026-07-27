@@ -47,6 +47,9 @@ return [
     'teaser_sub' => 'Sign up now – applied automatically at checkout.',
     'teaser_cart' => 'Save :amount with an account',
     'teaser_cart_sub' => 'Sign up free and secure the discount.',
+    'teaser_success' => 'Save :amount next time',
+    'teaser_success_sub' => 'Creating an account takes 30 seconds – your details are already filled in.',
+    'teaser_success_done' => 'Account created! You’ll save :amount next time.',
 
     // Active banner for logged-in customers
     'default_label_new' => 'Welcome discount',

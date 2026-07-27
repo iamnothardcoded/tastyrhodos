@@ -259,6 +259,29 @@ class DiscountManager
     }
 
     /**
+     * Wording for the order-success signup prompt ("next time you'd save X").
+     * Null when the welcome discount is off. `done` is shown after the account
+     * is created.
+     *
+     * @return ?array{amount_label: string, headline: string, subline: string, done: string}
+     */
+    public static function successTeaser(): ?array
+    {
+        if (!$t = self::welcomeTeaser()) {
+            return null;
+        }
+
+        $amount = $t['amount_label'];
+
+        return [
+            'amount_label' => $amount,
+            'headline' => lang('iamnothardcoded.signupdiscounts::default.teaser_success', ['amount' => $amount]),
+            'subline' => lang('iamnothardcoded.signupdiscounts::default.teaser_success_sub'),
+            'done' => lang('iamnothardcoded.signupdiscounts::default.teaser_success_done', ['amount' => $amount]),
+        ];
+    }
+
+    /**
      * The euro amount a not-yet-registered visitor WOULD save on this cart via
      * the welcome discount — the "sign up and you'd save this" figure. Ignores
      * the login/eligibility check by design. 0 when off, empty, or below min.

@@ -1,7 +1,48 @@
-<div class="row g-3 mb-1">
+{{-- Returning logged-in customer with a complete profile: identity is a summary
+     card (Wolt/Uber pattern), not editable fields — name/email change only in
+     Meine Daten. The phone stays editable PER ORDER (dead-battery case; the
+     jamasa profile-sync listener never overwrites the profile number). The
+     Livewire props stay server-prefilled from the customer, so submitting
+     without rendering these inputs is safe; the jamasa afterSaveOrder listener
+     additionally server-enforces order email = account email. --}}
+@php($identityCustomer = \Igniter\User\Facades\Auth::isLogged() ? \Igniter\User\Facades\Auth::customer() : null)
+@php($identityLocked = $identityCustomer && filled($identityCustomer->first_name) && filled($identityCustomer->email))
+{{-- ⚠️ This partial is included FOUR times (details/comments/payments/terms).
+     $identityLocked must stay global (it also drives the reduced localStorage
+     FIELDS list in every script copy below), but the card renders ONLY in the
+     include that carries the identity fields. --}}
+@php($fieldsHaveIdentity = collect($fields)->contains(fn($f) => $f->fieldName === 'email'))
+{{-- Notes section (comment/delivery_comment): collapsed behind „+ Anmerkung
+     hinzufügen" (Wolt pattern, decided 2026-07-27). Expansion state = body
+     class famedo-notes-open (survives Livewire morphs); famedo.js toggles it
+     and force-opens whenever a note has content (draft/localStorage). --}}
+@php($isNotesSection = collect($fields)->contains(fn($f) => in_array($f->fieldName, ['comment', 'delivery_comment'])))
+
+@if($isNotesSection)
+    <button type="button" class="addnote-link" data-famedo-notes-toggle>
+        <span class="addnote-link__plus">+</span> Anmerkung hinzufügen
+    </button>
+@endif
+
+@if($identityLocked && $fieldsHaveIdentity)
+    <div class="checkout-ident">
+        <div class="checkout-ident__body">
+            <div class="checkout-ident__label">Bestellt als</div>
+            <div class="checkout-ident__name">{{ $identityCustomer->first_name }} {{ $identityCustomer->last_name }}</div>
+            <div class="checkout-ident__mail">{{ $identityCustomer->email }}</div>
+        </div>
+        <a class="checkout-ident__edit" href="{{ page_url('account.profile') }}?return=checkout">ändern <i class="fa fa-chevron-right"></i></a>
+    </div>
+@endif
+
+<div @class(['row g-3 mb-1', 'co-notes' => $isNotesSection])>
     @foreach ($fields as $field)
         {{-- Skip delivery_comment field when order is not delivery type --}}
         @if ($field->fieldName === 'delivery_comment' && !$order->isDeliveryType())
+            @continue
+        @endif
+        {{-- Identity lives in the card above for returning customers --}}
+        @if ($identityLocked && in_array($field->fieldName, ['first_name', 'last_name', 'email']))
             @continue
         @endif
         <div @class(['col-sm-6', $field->cssClass])>
@@ -87,8 +128,11 @@
                         title="@lang('igniter.orange::default.error_telephone_invalid')"
                         {!! $field->getAttributes() !!}
                     />
-                    <label for="{{$field->getId()}}">@lang($field->label)</label>
+                    <label for="{{$field->getId()}}">{{ $identityLocked && $field->fieldName === 'telephone' ? 'Telefon für diese Bestellung' : lang($field->label) }}</label>
                 </div>
+                @if($identityLocked && $field->fieldName === 'telephone')
+                    <div class="checkout-ident__phonehint">Änderungen gelten nur für diese Bestellung.</div>
+                @endif
                 <x-igniter-orange::forms.error
                     field="{{$field->getName()}}"
                     id="{{$field->getId()}}-feedback"
@@ -108,7 +152,40 @@
 @script
 <script>
     const STORAGE_KEY = 'checkout_fields';
-    const FIELDS = ['first_name', 'last_name', 'email', 'telephone', 'comment', 'delivery_comment'];
+    /* Field lifetimes (decided 2026-07-28, driver note un-stuck same day):
+       - localStorage (persists across visits): guest identity fields only
+         (July-9 keep-prefilled).
+       - sessionStorage (this tab only, cleared on the success page): BOTH
+         notes for everyone + the per-order phone for logged-in customers.
+         They keep the core guarantee — content survives validation errors and
+         Liefern/Abholen toggles WITHIN the order — without becoming defaults.
+         A sticky driver note only makes sense bound to a specific ADDRESS
+         (wrong house otherwise) → deferred, see the low-priority TODO. */
+    const FIELDS = {!! json_encode($identityLocked ? [] : ['first_name', 'last_name', 'email', 'telephone']) !!};
+    const IDENTITY_LOCKED = {!! json_encode((bool) $identityLocked) !!};
+    const PHONE_SESSION_KEY = 'checkout_order_phone';
+    const NOTE_SESSION_KEY = 'checkout_order_note';
+    const DELNOTE_SESSION_KEY = 'checkout_delivery_note';
+
+    function saveSessionField(name, key) {
+        const el = document.querySelector('[data-checkout-control="' + name + '"]');
+        if (!el) return;
+        if (el.value && el.value.trim() !== '') {
+            sessionStorage.setItem(key, el.value);
+        } else {
+            sessionStorage.removeItem(key);
+        }
+    }
+
+    /* Restore = show it AND hand it to Livewire. The $wire.set is DEFERRED
+       (third arg false: no network; the value rides the next real request,
+       incl. submit) — undeferred sets caused one roundtrip per field on
+       every checkout load. The direct el.value makes it visible instantly. */
+    function setField(name, value) {
+        $wire.set('fields.' + name, value, false);
+        const el = document.querySelector('[data-checkout-control="' + name + '"]');
+        if (el) el.value = value;
+    }
 
     function saveFields() {
         const data = {};
@@ -121,6 +198,11 @@
         if (Object.keys(data).length > 0) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
+        if (IDENTITY_LOCKED) {
+            saveSessionField('telephone', PHONE_SESSION_KEY);
+        }
+        saveSessionField('comment', NOTE_SESSION_KEY);
+        saveSessionField('delivery_comment', DELNOTE_SESSION_KEY);
     }
 
     function restoreFields() {
@@ -136,9 +218,20 @@
 
         FIELDS.forEach(name => {
             if (data[name]) {
-                $wire.set('fields.' + name, data[name]);
+                setField(name, data[name]);
             }
         });
+    }
+
+    function restoreSessionFields() {
+        if (IDENTITY_LOCKED) {
+            const phone = sessionStorage.getItem(PHONE_SESSION_KEY);
+            if (phone) setField('telephone', phone);
+        }
+        const note = sessionStorage.getItem(NOTE_SESSION_KEY);
+        if (note) setField('comment', note);
+        const delnote = sessionStorage.getItem(DELNOTE_SESSION_KEY);
+        if (delnote) setField('delivery_comment', delnote);
     }
 
     // Save on blur
@@ -168,5 +261,6 @@
 
     // Restore on load
     restoreFields();
+    restoreSessionFields();
 </script>
 @endscript

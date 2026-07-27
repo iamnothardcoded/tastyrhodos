@@ -24,7 +24,7 @@ security: customer
         <div class="account-hub__grid">
             <a class="account-tile" href="{{ page_url('account.profile') }}">
                 <span class="account-tile__ic"><i class="fa fa-user"></i></span>
-                <span class="account-tile__t">Mein Konto</span>
+                <span class="account-tile__t">Meine Daten</span>
                 <span class="account-tile__s">Name &amp; Kontakt</span>
                 <i class="fa fa-chevron-right account-tile__chev"></i>
             </a>
