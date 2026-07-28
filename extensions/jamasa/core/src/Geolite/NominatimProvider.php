@@ -42,6 +42,24 @@ use Throwable;
 class NominatimProvider extends BaseNominatimProvider
 {
     /**
+     * Fixed application identifier for OSM requests. The parent's geocode
+     * defaults the User-Agent to request()->userAgent() — i.e. the CUSTOMER'S
+     * browser UA. Nominatim throttles generic browser UAs arriving from one
+     * server IP (looks like scraping) → geocodes crawled to ~12s. Stamping the
+     * app identifier (same one the Photon path already sends) makes geocode
+     * requests first-class + OSM-usage-policy compliant.
+     */
+    private const GEOCODER_UA = 'famedo-storefront (kontakt: iam@nothardcoded.io)';
+
+    /** Stamp the fixed app User-Agent + a stable Referer onto a geocode query. */
+    private function withFamedoAgent(GeoQueryInterface $query): GeoQueryInterface
+    {
+        return $query
+            ->withData('userAgent', self::GEOCODER_UA)
+            ->withData('referer', (string) config('app.url'));
+    }
+
+    /**
      * Customer-truth house numbers (famedo address flow): when the QUERY
      * carries a house number ("Cottenburgstraße 12, 44575 …") but OSM doesn't
      * know that building, Nominatim matches the street and the result has an
@@ -54,7 +72,7 @@ class NominatimProvider extends BaseNominatimProvider
     public function geocodeQuery(GeoQueryInterface $query): Collection
     {
         try {
-            $results = parent::geocodeQuery($query);
+            $results = parent::geocodeQuery($this->withFamedoAgent($query));
         } catch (Throwable) {
             // Nominatim down = "can't tell" — same rule as an empty result below.
             $results = collect();
@@ -79,7 +97,7 @@ class NominatimProvider extends BaseNominatimProvider
             $canonical = sprintf('%s %s, %s %s', $parts['street'], $parts['number'], $parts['postcode'], $parts['city']);
             if ($canonical !== trim($query->getText())) {
                 try {
-                    $results = parent::geocodeQuery(GeoQuery::create($canonical));
+                    $results = parent::geocodeQuery($this->withFamedoAgent(GeoQuery::create($canonical)));
                 } catch (Throwable) {
                     $results = collect();
                 }
