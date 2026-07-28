@@ -217,8 +217,13 @@ class DiscountManager
             // null case: `created_at >= NULL` is never-true in SQL → count 0 →
             // PERMANENT eligibility for legacy/seed rows. No timestamp ⇒ treat
             // every processed order as counting (safe: no free discount forever).
+            // STRICT `>`: the guest order that triggers a success-card signup
+            // back-links with the SAME-second timestamp as the account's
+            // created_at, so `>=` would count it and instantly consume the
+            // welcome eligibility (the primary signup path). A genuine
+            // post-registration order is always strictly later.
             if ($customer->created_at) {
-                $query->where('created_at', '>=', $customer->created_at);
+                $query->where('created_at', '>', $customer->created_at);
             }
             if ($canceledStatus = setting('canceled_order_status')) {
                 $query->where('status_id', '!=', $canceledStatus);
