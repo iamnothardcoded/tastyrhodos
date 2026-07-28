@@ -170,13 +170,26 @@
     const NOTE_SESSION_KEY = 'checkout_order_note';
     const DELNOTE_SESSION_KEY = 'checkout_delivery_note';
 
+    /* Safe storage: touching window.localStorage throws SecurityError when site
+       data is blocked (Chrome), setItem throws QuotaExceededError (old iOS
+       private mode). Swallow both — the persistence layer must degrade, not take
+       the whole checkout script down with an uncaught error. */
+    function store(area, op, key, val) {
+        try {
+            const s = area === 'l' ? window.localStorage : window.sessionStorage;
+            if (op === 'get') return s.getItem(key);
+            if (op === 'del') { s.removeItem(key); return null; }
+            s.setItem(key, val); return null;
+        } catch (e) { return null; }
+    }
+
     function saveSessionField(name, key) {
         const el = document.querySelector('[data-checkout-control="' + name + '"]');
         if (!el) return;
         if (el.value && el.value.trim() !== '') {
-            sessionStorage.setItem(key, el.value);
+            store('s', 'set', key, el.value);
         } else {
-            sessionStorage.removeItem(key);
+            store('s', 'del', key);
         }
     }
 
@@ -199,7 +212,9 @@
             }
         });
         if (Object.keys(data).length > 0) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            store('l', 'set', STORAGE_KEY, JSON.stringify(data));
+        } else {
+            store('l', 'del', STORAGE_KEY); // emptied → don't resurrect it next visit
         }
         if (IDENTITY_LOCKED) {
             saveSessionField('telephone', PHONE_SESSION_KEY);
@@ -209,7 +224,7 @@
     }
 
     function restoreFields() {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = store('l', 'get', STORAGE_KEY);
         if (!saved) return;
 
         let data;
@@ -228,12 +243,12 @@
 
     function restoreSessionFields() {
         if (IDENTITY_LOCKED) {
-            const phone = sessionStorage.getItem(PHONE_SESSION_KEY);
+            const phone = store('s', 'get', PHONE_SESSION_KEY);
             if (phone) setField('telephone', phone);
         }
-        const note = sessionStorage.getItem(NOTE_SESSION_KEY);
+        const note = store('s', 'get', NOTE_SESSION_KEY);
         if (note) setField('comment', note);
-        const delnote = sessionStorage.getItem(DELNOTE_SESSION_KEY);
+        const delnote = store('s', 'get', DELNOTE_SESSION_KEY);
         if (delnote) setField('delivery_comment', delnote);
     }
 

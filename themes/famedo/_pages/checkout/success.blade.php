@@ -21,7 +21,9 @@ permalink: /checkout/success/:hash?
      completed order — the next order starts fresh (phone from the account,
      both notes empty; sticky driver note deferred to the address-bound TODO). --}}
 <script>
-sessionStorage.removeItem('checkout_order_phone');
-sessionStorage.removeItem('checkout_order_note');
-sessionStorage.removeItem('checkout_delivery_note');
+try {
+    sessionStorage.removeItem('checkout_order_phone');
+    sessionStorage.removeItem('checkout_order_note');
+    sessionStorage.removeItem('checkout_delivery_note');
+} catch (e) { /* storage blocked — nothing to clear */ }
 </script>

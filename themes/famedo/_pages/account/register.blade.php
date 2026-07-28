@@ -4,26 +4,14 @@ permalink: /register
 description: ''
 layout: default
 security: guest
-
-'[igniter-orange::register]':
-    agreeTermsSlug: terms-and-conditions
 ---
-{{-- famedo override of igniter-orange::_pages.account.register — adds return-url
-     capture so a guest who registers from a teaser (menu promo / cart "save X €")
-     lands back where they were, with their cart intact, to finish the order.
-     Register::onRegister() already calls redirect()->intended(); we seed that
-     intended URL here (session survives the Livewire submit). --}}
+{{-- famedo override — accounts are passwordless (email-code), so /register is
+     the SAME unified flow as /login (it signs up unknown emails automatically).
+     Mounting the component here — rather than the vendor password-register form —
+     closes the orphan: that form created password accounts whose password could
+     never be changed (the profile has no password section). Any stray /register
+     link now lands on the correct flow. --}}
 @php
-    // Local-only capture (open-redirect safe); then re-stash WITH ?welcome=1
-    // (fragment-safe) so the menu pops the cart open on return.
-    if ($return = \Jamasa\Core\Helpers\ReturnUrl::capture(request()->query('redirect') ?: url()->previous())) {
-        redirect()->setIntendedUrl(\Jamasa\Core\Helpers\ReturnUrl::withWelcomeFlag($return));
-    }
+    \Jamasa\Core\Helpers\ReturnUrl::capture(request()->query('redirect') ?: url()->previous());
 @endphp
-<div class="container">
-    <div class="row">
-        <div class="col-sm-6 mx-auto my-5">
-            <livewire:igniter-orange::register />
-        </div>
-    </div>
-</div>
+<livewire:jamasa::email-code-login />

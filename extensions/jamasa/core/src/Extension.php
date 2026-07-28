@@ -229,73 +229,77 @@ class Extension extends BaseExtension
         // the session position to THIS order's final address, so marker ↔ order
         // can't desync; the un-stamp branch heals any leftover from earlier
         // attempts. Session position is null for API/POS-created orders.
+        // ONE afterSaveOrder listener does both order mutations then a SINGLE
+        // order write (was two listeners → two writes on the hottest path):
+        //  (a) rescue-note stamp for geocoder-blind delivery orders;
+        //  (b) order ↔ customer identity for logged-in customers.
         Event::listen('igniter.checkout.afterSaveOrder', function ($order): void {
-            if (!$order instanceof \Igniter\Cart\Models\Order || !$order->isDeliveryType()) {
-                return;
-            }
-
-            // Wording is customer-visible too (comment shows on the success
-            // page/mails) — must read as "WE may contact YOU", never as an
-            // invitation for the customer to call the restaurant.
-            $note = 'ACHTUNG: Adresse nicht automatisch geprüft - wir kontaktieren dich bei Rückfragen';
-            $isRescue = (bool)\Igniter\Local\Facades\Location::userPosition()?->getValue('famedoBlindFallback');
-            $hasNote = str_contains((string)$order->comment, $note);
-
-            if ($isRescue && !$hasNote) {
-                $order->comment = trim($note."\n".(string)$order->comment);
-                $order->saveQuietly();
-            } elseif (!$isRescue && $hasNote) {
-                $order->comment = trim(str_replace($note, '', (string)$order->comment));
-                $order->saveQuietly();
-            }
-        });
-
-        // Keep order ↔ customer identity consistent at checkout (passwordless
-        // email-code accounts start completely EMPTY; returning customers see the
-        // identity CARD instead of fields — famedo tab-fields).
-        // ORDER-side enforcement: the order's email is ALWAYS the account email
-        // (the checkout email is not an editable identity for logged-in users);
-        // blank order names fill from the profile (card variant posts no name).
-        // PROFILE-side sync: names SYNC from every order that provides them —
-        // a name is stable identity and checkout is where typos get corrected.
-        // The profile phone is FILL-ONLY: an order phone can be situational
-        // (dead battery, partner's number) and never overwrites the profile.
-        Event::listen('igniter.checkout.afterSaveOrder', function ($order): void {
-            if (!$order instanceof \Igniter\Cart\Models\Order || !$order->customer_id
-                || !($customer = $order->customer)) {
+            if (!$order instanceof \Igniter\Cart\Models\Order) {
                 return;
             }
 
             $orderDirty = false;
-            if (filled($customer->email) && $order->email !== $customer->email) {
-                $order->email = $customer->email;
-                $orderDirty = true;
-            }
-            foreach (['first_name', 'last_name', 'telephone'] as $field) {
-                if (blank($order->{$field}) && filled($customer->{$field})) {
-                    $order->{$field} = $customer->{$field};
+
+            // (a) Geocoder-blind rescue marker (delivery only). Stamped at
+            // afterSaveOrder — NOT model.beforeCreate: TI creates a DRAFT order
+            // when checkout opens, and a create-time stamp reads whatever the
+            // session held at page load — a rescue selected then abandoned leaks
+            // into the draft comment and shows up PREFILLED in the note textarea
+            // (bit us: order #247, 2026-07-24). Wording is customer-visible
+            // (success page/mails) → "WE may contact YOU", never an invitation
+            // for the customer to call. Session position is null for API/POS.
+            if ($order->isDeliveryType()) {
+                $note = 'ACHTUNG: Adresse nicht automatisch geprüft - wir kontaktieren dich bei Rückfragen';
+                $isRescue = (bool)\Igniter\Local\Facades\Location::userPosition()?->getValue('famedoBlindFallback');
+                $hasNote = str_contains((string)$order->comment, $note);
+                if ($isRescue && !$hasNote) {
+                    $order->comment = trim($note."\n".(string)$order->comment);
+                    $orderDirty = true;
+                } elseif (!$isRescue && $hasNote) {
+                    $order->comment = trim(str_replace($note, '', (string)$order->comment));
                     $orderDirty = true;
                 }
             }
+
+            // (b) Identity (logged-in customers). ORDER-side: the order email is
+            // ALWAYS the account email (email isn't a checkout-editable identity);
+            // blank order names fill from the profile (the card variant posts no
+            // name). PROFILE-side (below): names SYNC from every order (stable
+            // identity, corrected at checkout); phone is FILL-ONLY (an order phone
+            // can be situational — dead battery, partner's — never overwrites it).
+            $customer = $order->customer_id ? $order->customer : null;
+            if ($customer) {
+                if (filled($customer->email) && $order->email !== $customer->email) {
+                    $order->email = $customer->email;
+                    $orderDirty = true;
+                }
+                foreach (['first_name', 'last_name', 'telephone'] as $field) {
+                    if (blank($order->{$field}) && filled($customer->{$field})) {
+                        $order->{$field} = $customer->{$field};
+                        $orderDirty = true;
+                    }
+                }
+            }
+
             if ($orderDirty) {
                 $order->saveQuietly();
             }
 
-            $dirty = false;
-            foreach (['first_name', 'last_name'] as $field) {
-                if (filled($order->{$field}) && $customer->{$field} !== $order->{$field}) {
-                    $customer->{$field} = $order->{$field};
-                    $dirty = true;
+            if ($customer) {
+                $customerDirty = false;
+                foreach (['first_name', 'last_name'] as $field) {
+                    if (filled($order->{$field}) && $customer->{$field} !== $order->{$field}) {
+                        $customer->{$field} = $order->{$field};
+                        $customerDirty = true;
+                    }
                 }
-            }
-
-            if (blank($customer->telephone) && filled($order->telephone)) {
-                $customer->telephone = $order->telephone;
-                $dirty = true;
-            }
-
-            if ($dirty) {
-                $customer->saveQuietly();
+                if (blank($customer->telephone) && filled($order->telephone)) {
+                    $customer->telephone = $order->telephone;
+                    $customerDirty = true;
+                }
+                if ($customerDirty) {
+                    $customer->saveQuietly();
+                }
             }
         });
 
