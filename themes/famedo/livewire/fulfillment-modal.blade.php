@@ -205,10 +205,15 @@
                         @endunless
                     </div>
                     <div class="modal-footer border-0 sheet__foot">
+                        {{-- wire:target=onConfirm: only the actual confirm greys the
+                             button. Without the target a background address SEARCH
+                             (searchQuery, 500ms-debounced geocode, up to ~5s) disabled
+                             Confirm too — it read as frozen while you were still typing. --}}
                         <button
                             type="submit"
                             class="btn-add"
                             wire:loading.class="disabled"
+                            wire:target="onConfirm"
                             x-bind:disabled="addrBlocked"
                         ><span class="mx-auto">@lang('igniter.orange::default.button_confirm')</span></button>
                     </div>
