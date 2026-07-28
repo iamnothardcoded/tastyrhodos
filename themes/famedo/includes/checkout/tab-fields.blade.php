@@ -6,7 +6,10 @@
      without rendering these inputs is safe; the jamasa afterSaveOrder listener
      additionally server-enforces order email = account email. --}}
 @php($identityCustomer = \Igniter\User\Facades\Auth::isLogged() ? \Igniter\User\Facades\Auth::customer() : null)
-@php($identityLocked = $identityCustomer && filled($identityCustomer->first_name) && filled($identityCustomer->email))
+{{-- All three identity fields must be present before we hide them: hiding
+     last_name (a required field) while it is empty makes checkout permanently
+     un-submittable with no field to fix it (e.g. a Lieferando-import record). --}}
+@php($identityLocked = $identityCustomer && filled($identityCustomer->first_name) && filled($identityCustomer->last_name) && filled($identityCustomer->email))
 {{-- ⚠️ This partial is included FOUR times (details/comments/payments/terms).
      $identityLocked must stay global (it also drives the reduced localStorage
      FIELDS list in every script copy below), but the card renders ONLY in the

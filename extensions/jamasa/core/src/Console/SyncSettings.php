@@ -236,9 +236,26 @@ class SyncSettings extends Command
         $conditions['signup_discount']['status'] = 1;
         $conditions['signup_discount']['priority'] = 104;
         $conditions['coupon']['priority'] = 105;
+        // Pin the tax priorities too (if present) so an admin can't drag a
+        // discount BELOW tax in the Cart-Conditions UI — that silently stops
+        // discounts shrinking the VAT base → VAT over-reported.
+        foreach (['tax_reduced' => 110, 'tax_standard' => 115] as $name => $priority) {
+            if (isset($conditions[$name])) {
+                $conditions[$name]['priority'] = $priority;
+            }
+        }
+        // ⚠️ CartSettings::get() MERGES the registered className/description into
+        // each row; persisting them freezes a class path in the DB, so a future
+        // rename/relocate throws in CartManager::makeCondition (storefront 500).
+        // Strip the code-owned keys — they re-merge from the registered condition
+        // at read time. We keep only what the admin form itself stores.
+        foreach ($conditions as &$condition) {
+            unset($condition['className'], $condition['description']);
+        }
+        unset($condition);
         \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
 
-        $this->line('  ✓ signup_discount on @104, coupon re-prioritized @105 (both before tax classes)');
+        $this->line('  ✓ signup_discount @104, coupon @105, tax @110/115 (discounts before tax)');
 
         // The register→discount moment needs auto-login; an approval-required
         // default customer group breaks it. Warn only — per-tenant decision.

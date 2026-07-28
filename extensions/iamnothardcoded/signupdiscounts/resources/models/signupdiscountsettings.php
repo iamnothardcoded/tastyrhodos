@@ -155,5 +155,15 @@ return [
                 ],
             ],
         ],
+        // Reject malformed input at the source (runtime is also rescue-guarded).
+        'rules' => [
+            ['new_amount', 'lang:iamnothardcoded.signupdiscounts::default.label_amount', 'nullable|numeric|min:0'],
+            ['new_min_total', 'lang:iamnothardcoded.signupdiscounts::default.label_min_total', 'nullable|numeric|min:0'],
+            ['new_window_days', 'lang:iamnothardcoded.signupdiscounts::default.label_window_days', 'nullable|integer|min:1'],
+            ['all_amount', 'lang:iamnothardcoded.signupdiscounts::default.label_amount', 'nullable|numeric|min:0'],
+            ['all_min_total', 'lang:iamnothardcoded.signupdiscounts::default.label_min_total', 'nullable|numeric|min:0'],
+            ['all_date_from', 'lang:iamnothardcoded.signupdiscounts::default.label_date_from', 'nullable|date'],
+            ['all_date_to', 'lang:iamnothardcoded.signupdiscounts::default.label_date_to', 'nullable|date'],
+        ],
     ],
 ];

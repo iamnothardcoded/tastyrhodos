@@ -77,6 +77,10 @@ class EmailCodeLogin extends Component
 
     protected const MAX_SENDS_PER_IP = 10; // per 10-min window
 
+    protected const MAX_SENDS_PER_DAY = 15; // per email per 24h (caps the brute budget)
+
+    protected const MAX_VERIFY_PER_IP = 30; // wrong-code attempts per IP per 10 min
+
     public function render()
     {
         return view('jamasa::livewire.email-code-login', [
@@ -126,18 +130,15 @@ class EmailCodeLogin extends Component
         $ipKey = 'famedo-login-send-ip:'.request()->ip();
 
         if (RateLimiter::tooManyAttempts($emailKey, self::MAX_SENDS_PER_EMAIL)
-            || RateLimiter::tooManyAttempts($ipKey, self::MAX_SENDS_PER_IP)) {
+            || RateLimiter::tooManyAttempts($ipKey, self::MAX_SENDS_PER_IP)
+            || RateLimiter::tooManyAttempts($this->dayKey(), self::MAX_SENDS_PER_DAY)) {
             $message = 'Zu viele Versuche. Bitte in ein paar Minuten erneut probieren.';
             $this->step === 'code' ? $this->codeError = $message : $this->emailError = $message;
 
             return;
         }
 
-        RateLimiter::hit($emailKey, self::CODE_TTL_SECONDS);
-        RateLimiter::hit($ipKey, self::CODE_TTL_SECONDS);
-
         $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
         Cache::put($this->codeKey(), Hash::make($code), self::CODE_TTL_SECONDS);
         Cache::forget($this->attemptsKey());
 
@@ -145,14 +146,32 @@ class EmailCodeLogin extends Component
         // platform); the address stays the platform sender. Subject carries the
         // code so it's readable straight from the notification.
         $siteName = (string)(setting('sender_name') ?: setting('site_name'));
-        Mail::send('jamasa::mail.login-code', [
-            'code' => $code,
-            'siteName' => $siteName,
-        ], function($message) use ($siteName, $code): void {
-            $message->to($this->email)
-                ->subject($code.' ist dein Anmeldecode'.($siteName !== '' ? ' – '.$siteName : ''))
-                ->from(config('mail.from.address'), $siteName ?: config('mail.from.name'));
-        });
+        $sent = rescue(function() use ($siteName, $code): bool {
+            Mail::send('jamasa::mail.login-code', [
+                'code' => $code,
+                'siteName' => $siteName,
+            ], function($message) use ($siteName, $code): void {
+                $message->to($this->email)
+                    ->subject($code.' ist dein Anmeldecode'.($siteName !== '' ? ' – '.$siteName : ''))
+                    ->from(config('mail.from.address'), $siteName ?: config('mail.from.name'));
+            });
+
+            return true;
+        }, false, false);
+
+        if (!$sent) {
+            // Roll back so nothing is consumed on a transient mail failure.
+            Cache::forget($this->codeKey());
+            $message = 'Code konnte gerade nicht gesendet werden. Bitte kurz später erneut versuchen.';
+            $this->step === 'code' ? $this->codeError = $message : $this->emailError = $message;
+
+            return;
+        }
+
+        // Count the send only once it actually went out.
+        RateLimiter::hit($emailKey, self::CODE_TTL_SECONDS);
+        RateLimiter::hit($ipKey, self::CODE_TTL_SECONDS);
+        RateLimiter::hit($this->dayKey(), 86400);
 
         $this->codeError = '';
         $this->step = 'code';
@@ -167,6 +186,16 @@ class EmailCodeLogin extends Component
 
         $this->codeError = '';
         $code = preg_replace('/\D/', '', $code);
+
+        // Per-IP verify throttle (independent of the per-code cap) so a small IP
+        // pool can't grind codes across many target emails.
+        if (RateLimiter::tooManyAttempts($this->verifyIpKey(), self::MAX_VERIFY_PER_IP)) {
+            $this->codeError = 'Zu viele Versuche. Bitte in ein paar Minuten erneut probieren.';
+            $this->dispatch('auth-code-invalid');
+
+            return;
+        }
+        RateLimiter::hit($this->verifyIpKey(), self::CODE_TTL_SECONDS);
 
         $hash = Cache::get($this->codeKey());
         if (strlen($code) !== 6 || !$hash) {
@@ -268,18 +297,18 @@ class EmailCodeLogin extends Component
         // Came here with a filled cart (e.g. via the cart teaser)? Have the menu
         // pop the cart sheet open on return so they finish the order with the
         // discount visible (the menus page reacts to ?welcome=1 + non-empty cart).
-        if (Cart::content()->count() > 0 && !str_contains($this->continueUrl, 'welcome=1')) {
-            $this->continueUrl .= (str_contains($this->continueUrl, '?') ? '&' : '?').'welcome=1';
+        if (Cart::content()->count() > 0) {
+            $this->continueUrl = \Jamasa\Core\Helpers\ReturnUrl::withWelcomeFlag($this->continueUrl);
         }
 
-        // Ground truth for the cart-across-login hunt — one line per login.
-        \Illuminate\Support\Facades\Log::notice(sprintf(
-            'famedo login: %s customer #%d | cart[%s]=%d | continue=%s',
+        // Cart-across-login diagnostics — debug level (was a hunt aid; keep it
+        // low-noise, no PII beyond the id, so it can stay for a while).
+        \Illuminate\Support\Facades\Log::debug(sprintf(
+            'famedo login: %s customer #%d | cart[%s]=%d',
             $this->returning ? 'returning' : 'new',
             $customer->getKey(),
             Cart::currentInstance(),
             Cart::content()->count(),
-            $this->continueUrl,
         ));
 
         if (class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class)
@@ -314,5 +343,17 @@ class EmailCodeLogin extends Component
     protected function attemptsKey(): string
     {
         return 'famedo-login-attempts:'.EmailNormalizer::normalize($this->email);
+    }
+
+    /** Per-email 24h send budget — bounds the total code guesses per address. */
+    protected function dayKey(): string
+    {
+        return 'famedo-login-day:'.EmailNormalizer::normalize($this->email);
+    }
+
+    /** Per-IP wrong-code budget — stops a small IP pool grinding many emails. */
+    protected function verifyIpKey(): string
+    {
+        return 'famedo-login-vip:'.request()->ip();
     }
 }

@@ -95,13 +95,24 @@
 
         const boxes = () => [...root.querySelectorAll('.code-box')];
 
+        // Guard: submit each complete code AT MOST ONCE. Without this, fixing a
+        // single digit after a wrong code re-fires onVerifyCode on every
+        // keystroke — each burns a server attempt, so correcting a typo can
+        // self-lockout. Reset on a fresh code request / after an invalid clear.
+        let lastSubmitted = '';
+        let inFlight = false;
         const submitIfComplete = () => {
             const code = boxes().map(b => b.value).join('');
-            if (code.length === 6 && /^\d{6}$/.test(code)) $wire.onVerifyCode(code);
+            if (code.length !== 6 || !/^\d{6}$/.test(code)) return;
+            if (inFlight || code === lastSubmitted) return;
+            lastSubmitted = code;
+            inFlight = true;
+            Promise.resolve($wire.onVerifyCode(code)).finally(() => { inFlight = false; });
         };
 
         const clearBoxes = (focus = true) => {
             boxes().forEach(b => { b.value = ''; });
+            lastSubmitted = '';
             if (focus) boxes()[0]?.focus();
         };
 

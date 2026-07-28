@@ -490,6 +490,12 @@
        saved addresses + manual link — no dead display-box step). Deliberately
        NOT auto-focused: the phone keyboard would cover the saved-address list. */
     var fmInitialQuery = null;
+    var fmConfirmed = false;
+    function fmComponent() {
+        var root = document.getElementById('fulfillmentModal');
+        root = root && root.closest('[wire\\:id]');
+        return (root && window.Livewire) ? Livewire.find(root.getAttribute('wire:id')) : null;
+    }
     document.addEventListener('show.bs.modal', function (e) {
         if (e.target && e.target.id === 'fulfillmentModal') {
             var rel = e.relatedTarget;
@@ -497,13 +503,11 @@
             var timeOnly = rel && rel.closest && rel.closest('[data-famedo-time-only]');
             document.body.classList.toggle('famedo-addr-only', !!addrOnly);
             document.body.classList.toggle('famedo-time-only', !timeOnly ? false : !addrOnly);
-            if (window.Livewire) {
-                var root = e.target.closest('[wire\\:id]');
-                var comp = root && Livewire.find(root.getAttribute('wire:id'));
-                if (comp) {
-                    fmInitialQuery = comp.get('searchQuery');
-                    if (!timeOnly) comp.call('onChangeDeliveryAddress');
-                }
+            fmConfirmed = false;
+            var comp = fmComponent();
+            if (comp) {
+                fmInitialQuery = comp.get('searchQuery');
+                if (!timeOnly) comp.call('onChangeDeliveryAddress');
             }
         }
     });
@@ -516,9 +520,9 @@
     document.addEventListener('submit', function (e) {
         var form = e.target;
         if (!form.closest || !form.closest('#fulfillmentModal') || !window.Livewire) return;
-        var root = form.closest('[wire\\:id]');
-        var comp = root && Livewire.find(root.getAttribute('wire:id'));
+        var comp = fmComponent();
         if (!comp) return;
+        fmConfirmed = true;
         var timeOnly = document.body.classList.contains('famedo-time-only');
         var unchanged = fmInitialQuery !== null && comp.get('searchQuery') === fmInitialQuery;
         if (timeOnly || unchanged) {
@@ -529,6 +533,15 @@
         if (e.target && e.target.id === 'fulfillmentModal') {
             document.body.classList.remove('famedo-addr-only');
             document.body.classList.remove('famedo-time-only');
+            // Dismissed WITHOUT confirming? Revert any typed-but-unapplied query
+            // to the applied address, so the next open's baseline is correct and
+            // the geocode-skip can't silently discard a real change (or keep a
+            // stale one). A confirmed close already applied it — leave it.
+            var comp = fmComponent();
+            if (comp && !fmConfirmed && fmInitialQuery !== null
+                && comp.get('searchQuery') !== fmInitialQuery) {
+                comp.set('searchQuery', fmInitialQuery, false);
+            }
         }
     });
 })();

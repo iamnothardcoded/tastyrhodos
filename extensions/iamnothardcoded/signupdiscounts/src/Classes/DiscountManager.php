@@ -166,14 +166,19 @@ class DiscountManager
             return false;
         }
 
-        $now = Carbon::now();
-        $from = $campaign['date_from'] ?? null;
+        // rescue: date_* are free-text settings — a malformed value must fail
+        // the promo CLOSED, not throw on every storefront render (this runs on
+        // each page + each cart-condition pass).
+        return (bool)rescue(function() use ($campaign, $to): bool {
+            $now = Carbon::now();
+            $from = $campaign['date_from'] ?? null;
 
-        if ($from && $now->lt(Carbon::parse($from)->startOfDay())) {
-            return false;
-        }
+            if ($from && $now->lt(Carbon::parse($from)->startOfDay())) {
+                return false;
+            }
 
-        return $now->lte(Carbon::parse($to)->endOfDay());
+            return $now->lte(Carbon::parse($to)->endOfDay());
+        }, false, false);
     }
 
     protected static function discountAmount(array $campaign, float $itemsSubtotal): float
@@ -207,8 +212,14 @@ class DiscountManager
             // consume the welcome eligibility — otherwise „Konto anlegen →
             // nächstes Mal sparen" would be a false promise. Register → your
             // next order is your first as a member.
-            $query = $customer->orders()->where('processed', 1)
-                ->where('created_at', '>=', $customer->created_at);
+            $query = $customer->orders()->where('processed', 1);
+            // Only orders since the account exists (see above). ⚠️ Guard the
+            // null case: `created_at >= NULL` is never-true in SQL → count 0 →
+            // PERMANENT eligibility for legacy/seed rows. No timestamp ⇒ treat
+            // every processed order as counting (safe: no free discount forever).
+            if ($customer->created_at) {
+                $query->where('created_at', '>=', $customer->created_at);
+            }
             if ($canceledStatus = setting('canceled_order_status')) {
                 $query->where('status_id', '!=', $canceledStatus);
             }
@@ -420,7 +431,8 @@ class DiscountManager
         $amount = (float)($campaign['amount'] ?? 0);
 
         if (($campaign['type'] ?? 'percent') === 'percent') {
-            return rtrim(rtrim(number_format($amount, 2, '.', ''), '0'), '.').' %';
+            // German decimal comma ("12,5 %"), trailing zeros trimmed ("10 %").
+            return rtrim(rtrim(number_format($amount, 2, ',', ''), '0'), ',').' %';
         }
 
         return currency_format($amount);
