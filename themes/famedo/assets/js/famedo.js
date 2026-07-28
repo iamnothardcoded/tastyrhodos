@@ -464,6 +464,7 @@
 
     // Poll while not open; on any state change reload for a fresh render.
     setInterval(function () {
+        if (document.hidden) return; // skip backgrounded tabs (battery + no unlock-burst)
         fetch('/jamasa/ordering-status', {headers: {Accept: 'application/json'}})
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
@@ -574,8 +575,19 @@
     } else {
         syncNotes();
     }
-    /* catches localStorage-restored + Livewire-morphed content */
-    setInterval(syncNotes, 1500);
+    /* Catch localStorage-restored + Livewire-morphed content — EVENT-DRIVEN
+       (was a forever setInterval(1500) that ran on every page for the tab's
+       whole life, even on the menu where no notes control exists). Now: after
+       each Livewire commit + on SPA navigation. */
+    document.addEventListener('livewire:navigated', syncNotes);
+    function attachNotesHook() {
+        if (!window.Livewire || typeof Livewire.hook !== 'function') return false;
+        Livewire.hook('commit', function (opts) {
+            (opts && typeof opts.succeed === 'function') ? opts.succeed(syncNotes) : syncNotes();
+        });
+        return true;
+    }
+    if (!attachNotesHook()) document.addEventListener('livewire:init', attachNotesHook);
 })();
 
 /* ---------- Guest keep-prefilled hygiene ----------

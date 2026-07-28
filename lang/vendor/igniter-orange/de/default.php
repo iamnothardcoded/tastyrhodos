@@ -66,7 +66,7 @@ return [
     'menu_login' => 'Anmelden',
     'menu_logout' => 'Abmelden',
     'menu_register' => 'Registrieren',
-    'menu_my_account' => 'Mein Konto',
+    'menu_my_account' => 'Meine Daten',
     'menu_account' => 'Übersicht',
     'menu_detail' => 'Daten bearbeiten',
     'menu_address' => 'Adressbuch',
