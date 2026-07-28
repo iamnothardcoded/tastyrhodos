@@ -155,9 +155,11 @@
 @script
 <script>
     const STORAGE_KEY = 'checkout_fields';
-    /* Field lifetimes (decided 2026-07-28, driver note un-stuck same day):
-       - localStorage (persists across visits): guest identity fields only
-         (July-9 keep-prefilled).
+    /* Field lifetimes (guest identity made SESSION-ONLY 2026-07-28):
+       - sessionStorage (this tab only): guest identity fields (first_name/
+         last_name/email/telephone). Was localStorage (persist-across-visits,
+         July-9), but that leaked a previous guest's name/email to the NEXT
+         person on a shared/kiosk device — session-only drops it on tab close.
        - sessionStorage (this tab only, cleared on the success page): BOTH
          notes for everyone + the per-order phone for logged-in customers.
          They keep the core guarantee — content survives validation errors and
@@ -212,9 +214,9 @@
             }
         });
         if (Object.keys(data).length > 0) {
-            store('l', 'set', STORAGE_KEY, JSON.stringify(data));
+            store('s', 'set', STORAGE_KEY, JSON.stringify(data));
         } else {
-            store('l', 'del', STORAGE_KEY); // emptied → don't resurrect it next visit
+            store('s', 'del', STORAGE_KEY); // emptied → clear
         }
         if (IDENTITY_LOCKED) {
             saveSessionField('telephone', PHONE_SESSION_KEY);
@@ -224,7 +226,7 @@
     }
 
     function restoreFields() {
-        const saved = store('l', 'get', STORAGE_KEY);
+        const saved = store('s', 'get', STORAGE_KEY);
         if (!saved) return;
 
         let data;

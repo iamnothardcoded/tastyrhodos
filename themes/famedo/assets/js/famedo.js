@@ -597,6 +597,9 @@
    authed also means nothing leaks to the NEXT guest after logout. */
 (function () {
     if (document.body.classList.contains('famedo-authed')) {
+        // sessionStorage = current home (session-only since 2026-07-28);
+        // localStorage = legacy cleanup for anyone still carrying a July-9 entry.
+        try { sessionStorage.removeItem('checkout_fields'); } catch (e) { /* storage blocked */ }
         try { localStorage.removeItem('checkout_fields'); } catch (e) { /* storage blocked */ }
     }
 })();

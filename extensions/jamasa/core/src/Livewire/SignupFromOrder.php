@@ -122,7 +122,25 @@ class SignupFromOrder extends Component
         ]);
 
         // Auth::isLogged() is true only when the group auto-activates (no approval).
-        $this->registered = Auth::isLogged();
+        if (! Auth::isLogged()) {
+            return;
+        }
+
+        // ⚠️ 419 fix: RegisterCustomer logged the customer in, which rotates the
+        // CSRF token (LoginCustomer → Session::regenerate). A Livewire MORPH here
+        // would leave the success page's OTHER components on the stale token — the
+        // order-preview's wire:poll.15s then fires and dies with „Diese Seite ist
+        // abgelaufen" (exactly what the guest hit). A full-page redirect
+        // (navigate:false) re-inits every component with the fresh token. The card
+        // is gone on reload (now logged in); a flash confirms the account.
+        $done = class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class)
+            ? (\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::successTeaser()['done'] ?? null)
+            : null;
+        flash()->success($done ?: lang('igniter.user::default.login.alert_account_created'));
+
+        $back = (string) request()->header('referer');
+        $target = ($back && \Jamasa\Core\Helpers\ReturnUrl::isLocal($back)) ? $back : page_url('local.menus');
+        $this->redirect($target, navigate: false);
     }
 
     public function render()
