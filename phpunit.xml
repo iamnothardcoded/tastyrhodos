@@ -11,6 +11,11 @@
         <testsuite name="Feature">
             <directory suffix="Test.php">./tests/Feature</directory>
         </testsuite>
+        <testsuite name="Extensions">
+            <directory suffix="Test.php">./extensions/jamasa/core/tests</directory>
+            <directory suffix="Test.php">./extensions/iamnothardcoded/taxclasses/tests</directory>
+            <directory suffix="Test.php">./extensions/iamnothardcoded/signupdiscounts/tests</directory>
+        </testsuite>
     </testsuites>
     <coverage processUncoveredFiles="true">
         <include>

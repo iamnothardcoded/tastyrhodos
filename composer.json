@@ -57,7 +57,10 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "Jamasa\\Core\\": "extensions/jamasa/core/src/",
+            "Iamnothardcoded\\TaxClasses\\": "extensions/iamnothardcoded/taxclasses/src/",
+            "Iamnothardcoded\\SignupDiscounts\\": "extensions/iamnothardcoded/signupdiscounts/src/"
         }
     },
     "scripts": {
