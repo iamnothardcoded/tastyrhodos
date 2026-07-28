@@ -30,3 +30,27 @@
     width: 100%;
     max-width: 460px;
   }
+
+/* Item-options modal loading skeleton — replaces the lone spinner so the sheet
+   reads as "loading structured content" (title, option rows, button) instead of
+   "half-broken/empty" during the on-demand component fetch. Perceptual only; the
+   fetch takes the same time. See livewire/utils/modal.blade.php. */
+.fm-skel { padding: 6px 4px 4px; }
+.fm-skel__bar,
+.fm-skel__row { border-radius: 8px; background: #e9ebee; position: relative; overflow: hidden; }
+.fm-skel__bar::after,
+.fm-skel__row::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent);
+  transform: translateX(-100%);
+  animation: fm-skel-shimmer 1.15s infinite;
+}
+.fm-skel__title { height: 22px; width: 62%; margin: 4px 0 10px; }
+.fm-skel__line  { height: 12px; width: 88%; margin-bottom: 22px; }
+.fm-skel__head  { height: 14px; width: 40%; margin: 0 0 12px; }
+.fm-skel__row   { height: 44px; width: 100%; margin-bottom: 10px; }
+.fm-skel__btn   { height: 52px; width: 100%; border-radius: 999px; margin-top: 18px; }
+@keyframes fm-skel-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .fm-skel__bar::after, .fm-skel__row::after { animation: none; }
+}

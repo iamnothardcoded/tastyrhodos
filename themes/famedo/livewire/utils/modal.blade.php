@@ -14,12 +14,20 @@
     @if ($component)
         @livewire($component, $arguments, key($activeModal))
     @else
+        {{-- Loading skeleton (was a lone spinner): shapes the item sheet — title,
+             a description line, an option group with rows, a confirm button — so
+             the wait reads as intentional. Styles in assets/css/fixes.css. --}}
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-body">
-                    <div class="text-center">
-                        <div class="ti-loading spinner-border fa-3x fa-fw" role="status"></div>
-                        <div class="fw-bold mt-2">@lang('jamasa.core::default.ui.loading')</div>
+                    <div class="fm-skel" role="status" aria-label="@lang('jamasa.core::default.ui.loading')">
+                        <div class="fm-skel__bar fm-skel__title"></div>
+                        <div class="fm-skel__bar fm-skel__line"></div>
+                        <div class="fm-skel__bar fm-skel__head"></div>
+                        <div class="fm-skel__row"></div>
+                        <div class="fm-skel__row"></div>
+                        <div class="fm-skel__row"></div>
+                        <div class="fm-skel__bar fm-skel__btn"></div>
                     </div>
                 </div>
             </div>
