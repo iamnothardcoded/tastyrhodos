@@ -29,7 +29,7 @@
                                 @class(['dropdown-item py-2 rounded', 'active' => $item->isActive])
                                 href="{{ $item->url }}"
                                 {!! $item->extraAttributes !!}
-                            >@lang($item->title)</a>
+                            >@lang($item->title === 'igniter.orange::default.menu_my_account' ? 'igniter.orange::default.menu_my_data' : $item->title)</a>
                         @endforeach
                     </div>
                 @endif

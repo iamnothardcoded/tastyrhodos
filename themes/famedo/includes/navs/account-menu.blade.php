@@ -2,7 +2,7 @@
     <a
         href="{{ page_url('account.account') }}"
         class="nav-item nav-link fw-medium {{ ($activePage == 'account-account') ? 'active' : 'text-reset' }}"
-    ><span class="fa fa-user text-muted me-3"></span>@lang('igniter.orange::default.menu_my_account')</a>
+    ><span class="fa fa-user text-muted me-3"></span>@lang('igniter.orange::default.menu_my_data')</a>
     <a
         href="{{ page_url('account.address') }}"
         class="nav-item nav-link fw-medium {{ ($activePage == 'account-address') ? 'active' : 'text-reset' }}"
