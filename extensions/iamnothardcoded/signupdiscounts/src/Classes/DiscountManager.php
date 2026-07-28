@@ -202,7 +202,13 @@ class DiscountManager
             // "Completed" = actually placed (processed) and not cancelled —
             // mirrors the core dashboard's non-cancelled logic. The unprocessed
             // rows every checkout session creates are excluded by processed=1.
-            $query = $customer->orders()->where('processed', 1);
+            // Only orders SINCE the account exists count: guest orders that get
+            // back-linked on registration (e.g. the success-page card) must not
+            // consume the welcome eligibility — otherwise „Konto anlegen →
+            // nächstes Mal sparen" would be a false promise. Register → your
+            // next order is your first as a member.
+            $query = $customer->orders()->where('processed', 1)
+                ->where('created_at', '>=', $customer->created_at);
             if ($canceledStatus = setting('canceled_order_status')) {
                 $query->where('status_id', '!=', $canceledStatus);
             }

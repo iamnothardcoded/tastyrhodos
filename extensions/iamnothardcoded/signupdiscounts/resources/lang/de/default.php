@@ -48,7 +48,7 @@ return [
     'teaser_cart' => 'Mit Konto sparst du :amount',
     'teaser_cart_sub' => 'Kostenlos registrieren und Rabatt sichern.',
     'teaser_success' => 'Nächstes Mal :amount sparen',
-    'teaser_success_sub' => 'Konto anlegen dauert 30 Sekunden – deine Daten sind schon da.',
+    'teaser_success_sub' => 'Ein Tipp genügt – kein Passwort. Anmelden geht künftig per E-Mail-Code.',
     'teaser_success_done' => 'Konto erstellt! Beim nächsten Mal sparst du :amount.',
 
     // Aktiv-Banner für angemeldete Kunden

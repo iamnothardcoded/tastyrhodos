@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Jamasa\Core\Helpers\EmailNormalizer;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
 
@@ -41,6 +42,11 @@ use Throwable;
  */
 class EmailCodeLogin extends Component
 {
+    // Server-owned state. #[Locked]: a client can't tamper the snapshot to jump
+    // to 'success', flip 'returning', or point $continueUrl off-site. Only
+    // $email stays writable (wire:model on the input) — it is re-validated on
+    // every server entry point (onRequestCode + sendCode).
+    #[Locked]
     public string $step = 'email'; // email | code | success
 
     public string $email = '';
@@ -50,14 +56,17 @@ class EmailCodeLogin extends Component
     public string $codeError = '';
 
     /** Set only after successful verification (no enumeration via snapshot). */
+    #[Locked]
     public bool $returning = false;
 
     /** The verified customer's currently-active discount, for the success chip. */
+    #[Locked]
     public ?string $successOffer = null;
 
     /** Where „Weiter" goes — resolved at verify time. ⚠️ Must be a PLAIN link:
      *  Session::regenerate() rotates the CSRF token, so any Livewire call after
      *  success would 419 ("page expired"). Navigation only. */
+    #[Locked]
     public string $continueUrl = '';
 
     protected const CODE_TTL_SECONDS = 600; // 10 min
@@ -102,6 +111,17 @@ class EmailCodeLogin extends Component
 
     protected function sendCode(): void
     {
+        // Re-validate: $email is the one writable prop, and onResend() reaches
+        // here without re-checking it (a tampered snapshot would otherwise hit
+        // Mail::to with an arbitrary string).
+        $this->email = mb_strtolower(trim($this->email));
+        if (!filter_var($this->email, FILTER_VALIDATE_EMAIL) || strlen($this->email) > 96) {
+            $message = 'Bitte eine gültige E-Mail-Adresse eingeben.';
+            $this->step === 'code' ? $this->codeError = $message : $this->emailError = $message;
+
+            return;
+        }
+
         $emailKey = 'famedo-login-send:'.EmailNormalizer::normalize($this->email);
         $ipKey = 'famedo-login-send-ip:'.request()->ip();
 
@@ -157,11 +177,11 @@ class EmailCodeLogin extends Component
         }
 
         if (!Hash::check($code, $hash)) {
+            // Cache::add creates the key WITH a TTL if absent (atomic) — required
+            // before increment(): on database/memcached, increment on a missing
+            // key returns false → the cap silently never trips (unlimited guesses).
+            Cache::add($this->attemptsKey(), 0, self::CODE_TTL_SECONDS);
             $attempts = (int)Cache::increment($this->attemptsKey());
-            if ($attempts === 1) {
-                // First failure: give the counter the same lifetime as the code.
-                Cache::put($this->attemptsKey(), 1, self::CODE_TTL_SECONDS);
-            }
 
             if ($attempts >= self::MAX_VERIFY_ATTEMPTS) {
                 Cache::forget($this->codeKey());
@@ -194,25 +214,25 @@ class EmailCodeLogin extends Component
 
     protected function signIn(): void
     {
-        // Identity is the NORMALIZED address (gmail dots/+tags = same inbox =
-        // same account — also the standard welcome-discount farming trick).
-        // Typed form is checked too so pre-normalizer accounts keep working.
-        $normalized = EmailNormalizer::normalize($this->email);
-        $customer = Customer::query()->where('email', $normalized)->first()
-            ?: Customer::query()->where('email', $this->email)->first();
+        // Identity keys on normalized_email (the beforeSave hook keeps it in step
+        // with email) — gmail dot/+tag variants resolve to ONE account.
+        $customer = Customer::query()
+            ->where('normalized_email', EmailNormalizer::normalize($this->email))
+            ->first();
         $this->returning = $customer !== null;
 
         if (!$customer) {
-            // New account from just an email: random password (auto-hashed via
-            // the model cast, never used — login is by code). ⚠️ 'status' => 1
-            // is REQUIRED: Customer::register ignores the $activate flag; the
+            // New account: store the LITERAL typed email (for display + the
+            // guest-order backlink's exact-email match); the hook computes
+            // normalized_email. Random password (auto-hashed via the model cast,
+            // never used — login is by code). ⚠️ 'status' => 1 is REQUIRED:
+            // Customer::register ignores the $activate flag; the
             // CustomerObserver::saved auto-activation only fires for enabled
-            // customers (status truthy + group without approval). Names stay
-            // empty until their first checkout / profile edit.
+            // customers. Names stay empty until first checkout / profile edit.
             $customer = resolve(RegisterCustomer::class)->handle([
                 'first_name' => '',
                 'last_name' => '',
-                'email' => $normalized,
+                'email' => $this->email,
                 'telephone' => '',
                 'password' => Str::random(40),
                 'newsletter' => 0,

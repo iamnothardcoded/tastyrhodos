@@ -36,9 +36,14 @@ class AccountSettings extends Component
 
     public string $returnTo = '';
 
-    public function mount(): void
+    public function mount(string $returnTo = ''): void
     {
-        $this->form->fillFrom(Auth::customer());
+        $this->returnTo = $returnTo;
+        $customer = Auth::customer();
+        $this->form->fillFrom($customer);
+        // fillFrom (vendor) doesn't load newsletter → without this it renders
+        // unticked and every save silently writes newsletter=0 (consent revoked).
+        $this->form->newsletter = (bool)$customer?->newsletter;
     }
 
     public function render()
@@ -57,8 +62,11 @@ class AccountSettings extends Component
 
         $this->form->validate();
 
-        $customer->fill($this->form->except([
-            'old_password', 'password', 'password_confirmation',
+        // only() (allowlist), not except(): a denylist over a `final` vendor form
+        // with $guarded=[] on Customer means a vendor-added property would silently
+        // mass-assign onto the customer. This also keeps password fields out.
+        $customer->fill($this->form->only([
+            'first_name', 'last_name', 'telephone', 'newsletter',
         ]));
         $customer->save();
 

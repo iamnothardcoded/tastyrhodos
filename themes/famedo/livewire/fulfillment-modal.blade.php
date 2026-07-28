@@ -95,10 +95,14 @@
                                 @endphp
                                 <div class="pickslots">
                                     @foreach($famedoSlots as $slot)
-                                        <button
+                                        {{-- BOTH sets DEFERRED + client-side highlight: an undeferred
+                                         orderTime set = one Livewire roundtrip PER TAP — rapid slot
+                                         tapping queued 5+ requests and froze the modal for seconds.
+                                         Values ride the confirm request; selection is instant. --}}
+                                    <button
                                             type="button"
                                             @class(['slot', 'on' => !$isAsap && $orderTime === $slot['key']])
-                                            x-on:click="$wire.set('isAsap', 0, false); $wire.set('orderTime', '{{ $slot['key'] }}')"
+                                            x-on:click="$wire.set('isAsap', 0, false); $wire.set('orderTime', '{{ $slot['key'] }}', false); const tsBox = $el.closest('#local-timeslot'); tsBox.querySelectorAll('.slot.on').forEach(b => b.classList.remove('on')); tsBox.querySelector('.pickopt')?.classList.remove('selected'); tsBox.querySelector('.pickopt__check')?.remove(); $el.classList.add('on')"
                                             @disabled($previewMode)
                                         >{{ $slot['label'] }}</button>
                                     @endforeach

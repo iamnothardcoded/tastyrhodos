@@ -149,6 +149,14 @@ abstract class AbstractTaxClassCondition extends CartCondition
                     return false;
                 }
 
+                // Only conditions APPLIED this pass count. A condition whose
+                // beforeApply() returned false (e.g. a discount that dropped
+                // below its min_total when an item was removed) keeps a stale
+                // negative getValue() — isValid() (passed flag) gates it out.
+                if (!$condition->isValid()) {
+                    return false;
+                }
+
                 // Delivery-fee coupons discount the delivery charge, not the
                 // items — don't shrink the item bases with them (the VAT on the
                 // delivery charge itself stays un-reduced: documented edge).

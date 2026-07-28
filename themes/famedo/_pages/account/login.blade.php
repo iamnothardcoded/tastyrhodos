@@ -11,14 +11,6 @@ security: guest
      override: whoever arrives from menu/checkout goes back there after
      sign-in via the success step's redirect()->intended(). --}}
 @php
-    $return = request()->query('redirect') ?: url()->previous();
-    if (
-        $return
-        && str_starts_with($return, url('/'))
-        && !str_contains($return, '/login')
-        && !str_contains($return, '/register')
-    ) {
-        redirect()->setIntendedUrl($return);
-    }
+    \Jamasa\Core\Helpers\ReturnUrl::capture(request()->query('redirect') ?: url()->previous());
 @endphp
 <livewire:jamasa::email-code-login />

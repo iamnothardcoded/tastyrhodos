@@ -31,6 +31,12 @@ class SignupDiscount extends CartCondition
     {
         $this->campaign = null;
         $this->discountAmount = 0;
+        // ⚠️ calculate() (the only place that resets calculatedValue) does NOT
+        // run when beforeApply returns false. Without this, a discount that
+        // STOPS applying mid-request (cart drops below min_total) leaves a stale
+        // negative getValue() — and the discount-aware tax conditions would then
+        // shrink the VAT bases for a discount that isn't on the order.
+        $this->calculatedValue = 0;
 
         if (!$this->target instanceof CartContent) {
             return false;

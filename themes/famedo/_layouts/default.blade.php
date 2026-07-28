@@ -25,7 +25,7 @@ description: Default layout
 </head>
 {{-- No h-100/d-flex on body: they clamp .app (flex child) to viewport height,
      cutting the white background off after one screen. .app sizes itself. --}}
-<body class="famedo page-{{ str_slug(str_replace('/', '-', $this->page->getBaseFileName() ?? 'unknown')) }} {{ $this->page->bodyClass }}{{ $famedoOrderingState !== 'open' ? ' ordering-'.$famedoOrderingState : '' }}">
+<body class="famedo page-{{ str_slug(str_replace('/', '-', $this->page->getBaseFileName() ?? 'unknown')) }} {{ $this->page->bodyClass }}{{ $famedoOrderingState !== 'open' ? ' ordering-'.$famedoOrderingState : '' }}{{ \Igniter\User\Facades\Auth::isLogged() ? ' famedo-authed' : '' }}">
 
 <div class="app">
     <header class="header">

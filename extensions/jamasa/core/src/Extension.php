@@ -89,6 +89,19 @@ class Extension extends BaseExtension
         // by the famedo profile page instead of the vendor component.
         Livewire::component('jamasa::account-settings', AccountSettings::class);
 
+        // Keep customers.normalized_email in step with email on EVERY creation
+        // path (email-code login, success-page card, admin, register page). The
+        // normalized form is the canonical account identity — gmail dot/+tag
+        // variants fold to one account (welcome-discount farming shield). See
+        // the add_normalized_email migration + EmailNormalizer.
+        \Igniter\User\Models\Customer::extend(function($model): void {
+            $model->bindEvent('model.beforeSave', function() use ($model): void {
+                $model->normalized_email = filled($model->email)
+                    ? \Jamasa\Core\Helpers\EmailNormalizer::normalize((string)$model->email)
+                    : null;
+            });
+        });
+
         // Register Blade directive for pickup code
         // Usage in views: @pickupCode($order->hash)
         Blade::directive('pickupCode', function (string $expression): string {

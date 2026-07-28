@@ -22,28 +22,21 @@
                     <div class="signup-card__s">{{ $offer['teaser']['subline'] }}</div>
                 </div>
             </div>
-            <form wire:submit="register" class="signup-card__form">
+            {{-- One tap, no password: accounts are passwordless (email-code
+                 login). The email is server-side from the order. --}}
+            <div class="signup-card__form">
                 <div class="signup-card__for">Für <b>{{ $offer['email'] }}</b></div>
-                <input
-                    type="password"
-                    wire:model="password"
-                    class="signup-card__input @error('password') is-invalid @enderror"
-                    placeholder="Passwort wählen (mind. 6 Zeichen)"
-                    autocomplete="new-password"
-                >
-                @error('password')
-                    <div class="signup-card__err">{{ $message }}</div>
-                @enderror
                 <button
-                    type="submit"
+                    type="button"
                     class="signup-card__btn"
+                    wire:click="register"
                     wire:loading.attr="disabled"
                     wire:target="register"
                 >
-                    <span wire:loading.remove wire:target="register">Konto anlegen</span>
+                    <span wire:loading.remove wire:target="register">Konto anlegen – kein Passwort nötig</span>
                     <span wire:loading wire:target="register">Einen Moment&hellip;</span>
                 </button>
-            </form>
+            </div>
         </div>
     @endif
 </div>

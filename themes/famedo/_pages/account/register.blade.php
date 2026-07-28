@@ -14,17 +14,10 @@ security: guest
      Register::onRegister() already calls redirect()->intended(); we seed that
      intended URL here (session survives the Livewire submit). --}}
 @php
-    $return = request()->query('redirect') ?: url()->previous();
-    if (
-        $return
-        && str_starts_with($return, url('/'))
-        && !str_contains($return, '/register')
-        && !str_contains($return, '/login')
-    ) {
-        // ?welcome=1 lets the target (menu) pop the cart open so the new
-        // customer can finish the order and see the discount applied.
-        $return .= (str_contains($return, '?') ? '&' : '?').'welcome=1';
-        redirect()->setIntendedUrl($return);
+    // Local-only capture (open-redirect safe); then re-stash WITH ?welcome=1
+    // (fragment-safe) so the menu pops the cart open on return.
+    if ($return = \Jamasa\Core\Helpers\ReturnUrl::capture(request()->query('redirect') ?: url()->previous())) {
+        redirect()->setIntendedUrl(\Jamasa\Core\Helpers\ReturnUrl::withWelcomeFlag($return));
     }
 @endphp
 <div class="container">

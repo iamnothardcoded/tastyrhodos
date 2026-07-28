@@ -564,3 +564,14 @@
     /* catches localStorage-restored + Livewire-morphed content */
     setInterval(syncNotes, 1500);
 })();
+
+/* ---------- Guest keep-prefilled hygiene ----------
+   Once logged in, the ACCOUNT is the source of truth for checkout identity —
+   the guest-era localStorage prefill is stale at best and, on a shared
+   device, the previous customer's identity at worst. Clearing it while
+   authed also means nothing leaks to the NEXT guest after logout. */
+(function () {
+    if (document.body.classList.contains('famedo-authed')) {
+        localStorage.removeItem('checkout_fields');
+    }
+})();
