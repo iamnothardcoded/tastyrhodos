@@ -24,18 +24,17 @@
             </div>
             {{-- One tap, no password: accounts are passwordless (email-code
                  login). The email is server-side from the order. --}}
+            {{-- Full-page POST (NOT wire:click): login rotates the CSRF token and a
+                 Livewire morph left the order-preview poll on the stale token → 419.
+                 A POST→redirect reloads with a fresh token. --}}
             <div class="signup-card__form">
                 <div class="signup-card__for">Für <b>{{ $offer['email'] }}</b></div>
-                <button
-                    type="button"
-                    class="signup-card__btn"
-                    wire:click="register"
-                    wire:loading.attr="disabled"
-                    wire:target="register"
-                >
-                    <span wire:loading.remove wire:target="register">Konto anlegen – kein Passwort nötig</span>
-                    <span wire:loading wire:target="register">Einen Moment&hellip;</span>
-                </button>
+                <form method="POST" action="{{ url('jamasa/signup-from-order') }}"
+                      onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Einen Moment…';">
+                    @csrf
+                    <input type="hidden" name="hash" value="{{ $hash }}">
+                    <button type="submit" class="signup-card__btn">Konto anlegen – kein Passwort nötig</button>
+                </form>
             </div>
         </div>
     @endif

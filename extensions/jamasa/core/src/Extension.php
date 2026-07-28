@@ -380,6 +380,12 @@ class Extension extends BaseExtension
         Route::middleware(['web', 'throttle:60,1'])
             ->get('jamasa/ordering-status', \Jamasa\Core\Http\Controllers\OrderingStatusController::class);
 
+        // Guest success-page „Konto anlegen" — a full-page POST (NOT Livewire): the
+        // login rotates the CSRF token, which 419'd the order-preview poll when this
+        // ran as a wire:click. A POST→redirect reloads the page with a fresh token.
+        Route::middleware(['web', 'throttle:10,1'])
+            ->post('jamasa/signup-from-order', \Jamasa\Core\Http\Controllers\SignupFromOrderController::class);
+
         // Confine owner-scoped tokens to api/jamasa/* on EVERY /api/* request.
         // TI's stock API authorizes admin resources by tokenable TYPE and ignores
         // abilities, so without this an owner token (minted on an admin user)

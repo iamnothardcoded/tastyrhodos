@@ -6,10 +6,8 @@ namespace Jamasa\Core\Livewire;
 
 use Igniter\Cart\Classes\OrderManager;
 use Igniter\Cart\Models\Order;
-use Igniter\User\Actions\RegisterCustomer;
 use Igniter\User\Facades\Auth;
 use Igniter\User\Models\Customer;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -97,51 +95,10 @@ class SignupFromOrder extends Component
         return ['teaser' => $teaser, 'email' => $order->email, 'name' => (string) $order->first_name];
     }
 
-    public function register(): void
-    {
-        $order = $this->order();
-
-        // Re-assert every guard server-side (never trust the rendered state).
-        if (Auth::isLogged() || !$order || $order->customer_id || !filled($order->email)
-            || $this->accountExistsFor((string)$order->email)) {
-            return;
-        }
-
-        // ⚠️ 'status' => 1 is required (mirrors the orange RegisterForm):
-        // CustomerObserver::saved only auto-activates ENABLED customers —
-        // without it the account is created disabled and can never log in.
-        // Password = random + hashed, never used: login is by email code.
-        resolve(RegisterCustomer::class)->handle([
-            'first_name' => (string) $order->first_name,
-            'last_name' => (string) $order->last_name,
-            'email' => $order->email,
-            'telephone' => (string) $order->telephone,
-            'password' => Str::random(40),
-            'newsletter' => 0,
-            'status' => 1,
-        ]);
-
-        // Auth::isLogged() is true only when the group auto-activates (no approval).
-        if (! Auth::isLogged()) {
-            return;
-        }
-
-        // ⚠️ 419 fix: RegisterCustomer logged the customer in, which rotates the
-        // CSRF token (LoginCustomer → Session::regenerate). A Livewire MORPH here
-        // would leave the success page's OTHER components on the stale token — the
-        // order-preview's wire:poll.15s then fires and dies with „Diese Seite ist
-        // abgelaufen" (exactly what the guest hit). A full-page redirect
-        // (navigate:false) re-inits every component with the fresh token. The card
-        // is gone on reload (now logged in); a flash confirms the account.
-        $done = class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class)
-            ? (\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::successTeaser()['done'] ?? null)
-            : null;
-        flash()->success($done ?: lang('igniter.user::default.login.alert_account_created'));
-
-        $back = (string) request()->header('referer');
-        $target = ($back && \Jamasa\Core\Helpers\ReturnUrl::isLocal($back)) ? $back : page_url('local.menus');
-        $this->redirect($target, navigate: false);
-    }
+    // NOTE: account creation is NOT a Livewire action anymore. The card posts a
+    // plain <form> to SignupFromOrderController (jamasa/signup-from-order) so the
+    // login's CSRF-token rotation can't 419 the order-preview poll. See that
+    // controller. This component now only DECIDES whether to render the card.
 
     public function render()
     {
