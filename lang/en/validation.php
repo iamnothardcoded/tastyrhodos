@@ -148,6 +148,14 @@ return [
     */
 
     'custom' => [
+        // Checkout: a guest whose email already has an account (unique rule on
+        // the `fields.`-prefixed checkout email) — signpost to log in instead of
+        // a bare "already taken". German message in lang/de/validation.php.
+        'fields' => [
+            'email' => [
+                'unique' => 'This email already belongs to an account. Please log in to use it.',
+            ],
+        ],
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
