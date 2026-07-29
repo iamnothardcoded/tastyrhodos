@@ -42,7 +42,7 @@ layout: default
             </a>
         @endif
     @else
-        @php($activeOffer = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::activeOfferFor(\Igniter\User\Facades\Auth::customer()))
+        @php($activeOffer = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::activeOfferFor(\Igniter\User\Facades\Auth::customer(), \Igniter\Cart\Facades\Cart::content()))
         @if($activeOffer)
             <div class="activeoffer">
                 <span class="activeoffer__ic">

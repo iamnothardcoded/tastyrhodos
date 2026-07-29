@@ -312,7 +312,7 @@ class EmailCodeLogin extends Component
         ));
 
         if (class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class)
-            && ($offer = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::activeOfferFor($customer))) {
+            && ($offer = \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::activeOfferFor($customer, Cart::content()))) {
             $this->successOffer = $offer['headline'];
         }
     }

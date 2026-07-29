@@ -335,7 +335,7 @@ class DiscountManager
      *
      * @return ?array{headline: string, subline: string}
      */
-    public static function activeOfferFor(Customer $customer): ?array
+    public static function activeOfferFor(Customer $customer, ?CartContent $content = null): ?array
     {
         $offers = [];
 
@@ -353,16 +353,45 @@ class DiscountManager
             return null;
         }
 
-        // Show the offer that would actually win at checkout (best-wins). The
-        // cart isn't known here, so rank by a proxy: higher percentage beats
-        // lower, percentage beats fixed, higher fixed beats lower. So an active
-        // promo that's a better deal DOES replace the welcome banner.
-        usort($offers, fn(array $a, array $b): int => self::rank($b['campaign']) <=> self::rank($a['campaign']));
+        // Show the offer that would actually win at checkout (best-wins). When
+        // the CART is known, rank by the real euro value on THIS cart (identical
+        // to bestDiscount) so the banner headline can't overpromise — e.g. a
+        // fixed € can beat a % on a small cart. When it isn't known (account
+        // page, empty cart), fall back to a type/amount proxy: percentage beats
+        // fixed, higher amount beats lower. The proxy is also the tiebreak —
+        // incl. when both offers are below their min on the known cart (worth 0).
+        $byCart = $content instanceof CartContent && (float)$content->subtotal() > 0;
+        usort($offers, function (array $a, array $b) use ($content, $byCart): int {
+            if ($byCart) {
+                $cmp = self::cartValue($b['campaign'], $content) <=> self::cartValue($a['campaign'], $content);
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
+            }
+
+            return self::rank($b['campaign']) <=> self::rank($a['campaign']);
+        });
         $best = $offers[0];
 
         return $best['slot'] === 'new'
             ? self::welcomeOfferPayload($best['campaign'], $customer)
             : self::promoOfferPayload($best['campaign']);
+    }
+
+    /**
+     * Real euro value of a campaign on THIS cart, respecting min_total (0 when
+     * below min) — mirrors bestDiscount so the active-offer banner ranks the
+     * same way checkout applies.
+     */
+    protected static function cartValue(array $campaign, CartContent $content): float
+    {
+        $itemsSubtotal = (float)$content->subtotal();
+        $minTotal = (float)($campaign['min_total'] ?? 0);
+        if ($minTotal > 0 && (float)$content->subtotalWithoutConditions() < $minTotal) {
+            return 0.0;
+        }
+
+        return self::discountAmount($campaign, $itemsSubtotal);
     }
 
     protected static function rank(array $campaign): float
