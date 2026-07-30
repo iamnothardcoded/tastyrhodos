@@ -78,7 +78,7 @@
                                             <button
                                                 type="button"
                                                 @class(['pickdate', 'on' => $orderDate === $key])
-                                                x-on:click="$wire.set('orderDate', '{{ $key }}').then(() => { const box = document.getElementById('local-timeslot'); if (box && !box.querySelector('.slot.on')) box.querySelector('.pickslots .slot')?.click(); })"
+                                                x-on:click="$wire.set('orderDate', '{{ $key }}').then(() => window.fmSelectNearestSlot($wire.get('orderTime')))"
                                                 @disabled($previewMode)
                                             >{{ $value }}</button>
                                         @endforeach
@@ -109,6 +109,7 @@
                                          Values ride the confirm request; selection is instant. --}}
                                     <button
                                             type="button"
+                                            data-slot="{{ $slot['key'] }}"
                                             @class(['slot', 'on' => !$isAsap && $orderTime === $slot['key']])
                                             x-on:click="$wire.set('isAsap', 0, false); $wire.set('orderTime', '{{ $slot['key'] }}', false); const tsBox = $el.closest('#local-timeslot'); tsBox.querySelectorAll('.slot.on').forEach(b => b.classList.remove('on')); tsBox.querySelector('.pickopt')?.classList.remove('selected'); tsBox.querySelector('.pickopt__check')?.remove(); $el.classList.add('on')"
                                             @disabled($previewMode)

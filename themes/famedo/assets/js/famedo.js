@@ -547,6 +547,31 @@
     });
 })();
 
+/* Slot dead-end recovery: after switching to a date whose slots don't include
+   the previously-picked time, select the NEAREST free slot to that time (not
+   just the first) so the choice stays as close as possible to what the customer
+   wanted. Called from the date bubbles after their slots re-render; bails if a
+   slot is already highlighted (the old time is still valid → keep it). */
+window.fmSelectNearestSlot = function (prevTime) {
+    var box = document.getElementById('local-timeslot');
+    if (!box || box.querySelector('.slot.on')) return;
+    var slots = [].slice.call(box.querySelectorAll('.pickslots .slot[data-slot]'));
+    if (!slots.length) return;
+    var toMin = function (k) {
+        var d = String(k).replace(/\D/g, '');
+        if (d.length < 3) return NaN;
+        d = d.slice(0, 4).padStart(4, '0');
+        return parseInt(d.slice(0, 2), 10) * 60 + parseInt(d.slice(2, 4), 10);
+    };
+    var target = slots[0], pm = toMin(prevTime);
+    if (!isNaN(pm)) {
+        target = slots.reduce(function (best, el) {
+            return Math.abs(toMin(el.dataset.slot) - pm) < Math.abs(toMin(best.dataset.slot) - pm) ? el : best;
+        }, slots[0]);
+    }
+    target.click();
+};
+
 /* ---------- Checkout notes: „+ Anmerkung hinzufügen" (collapse) ----------
    The notes row (comment/delivery_comment) is hidden until the customer asks
    for it — or until a note HAS content (draft order comment, localStorage
