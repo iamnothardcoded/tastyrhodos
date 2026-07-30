@@ -67,10 +67,18 @@
                                 @if(count($timeslotDates) > 1)
                                     <div class="pickdates">
                                         @foreach($timeslotDates as $key => $value)
+                                            {{-- Dead-end fix: switching to a date whose slots don't
+                                                 include the currently-picked time left NO slot
+                                                 highlighted and „Bestätigen" doing nothing (stale
+                                                 orderTime, not ASAP). After the date's slots
+                                                 re-render, if none is selected (old time invalid
+                                                 here, or ASAP was on), auto-pick this date's FIRST
+                                                 slot; a still-valid time keeps its highlight, so
+                                                 there is always a valid, bookable selection. --}}
                                             <button
                                                 type="button"
                                                 @class(['pickdate', 'on' => $orderDate === $key])
-                                                x-on:click="$wire.set('orderDate', '{{ $key }}')"
+                                                x-on:click="$wire.set('orderDate', '{{ $key }}').then(() => { const box = document.getElementById('local-timeslot'); if (box && !box.querySelector('.slot.on')) box.querySelector('.pickslots .slot')?.click(); })"
                                                 @disabled($previewMode)
                                             >{{ $value }}</button>
                                         @endforeach
