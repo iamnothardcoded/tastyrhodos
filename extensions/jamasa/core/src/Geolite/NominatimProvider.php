@@ -268,7 +268,14 @@ class NominatimProvider extends BaseNominatimProvider
 
     private const SUGGESTION_SHOW_LIMIT = 6;
 
+    // Fallback only — a self-hosted instance overrides this via the
+    // endpoints.photon config key (set from PHOTON_URL in Extension boot).
     private const PHOTON_ENDPOINT = 'https://photon.komoot.io/api/';
+
+    protected function famedoPhotonEndpoint(): string
+    {
+        return array_get($this->config, 'endpoints.photon') ?: self::PHOTON_ENDPOINT;
+    }
 
     #[Override]
     public function placesAutocomplete(GeoQueryInterface $query): Collection
@@ -340,7 +347,7 @@ class NominatimProvider extends BaseNominatimProvider
         // streets only — plus address points when a house number was typed
         // (villages/farms named "Born" were eating the pool otherwise).
         $layers = preg_match('/\d/', $text) ? '&layer=house&layer=street' : '&layer=street';
-        $url = self::PHOTON_ENDPOINT.'?q='.rawurlencode($text).'&limit=50&lang=de'.$layers;
+        $url = $this->famedoPhotonEndpoint().'?q='.rawurlencode($text).'&limit=50&lang=de'.$layers;
         if ($lat && $lng) {
             $url .= sprintf('&lat=%F&lon=%F', $lat, $lng);
         }

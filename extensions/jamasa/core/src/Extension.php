@@ -142,6 +142,24 @@ class Extension extends BaseExtension
             'igniter-system.sendPoweredByHeader' => false,
         ]);
 
+        // Self-hosted geocoders (shared box services, infra/shared-services).
+        // NOMINATIM_URL / PHOTON_URL are BASE urls (scheme+host+port, no path)
+        // and must be real process env (compose `environment:`), not .env keys —
+        // once config is cached Laravel never loads .env, so env() here would
+        // silently return null for .env-only vars. Unset ⇒ public OSM servers.
+        // The distance endpoint stays untouched: that's OSRM routing
+        // (routing.openstreetmap.de), not Nominatim.
+        if ($nominatimUrl = rtrim((string)env('NOMINATIM_URL', ''), '/')) {
+            config([
+                'igniter-geocoder.providers.nominatim.endpoints.geocode' => $nominatimUrl.'/search?q=%s&format=json&addressdetails=1&limit=%d',
+                'igniter-geocoder.providers.nominatim.endpoints.reverse' => $nominatimUrl.'/reverse?format=json&lat=%F&lon=%F&addressdetails=1&zoom=%d',
+                'igniter-geocoder.providers.nominatim.endpoints.places' => $nominatimUrl.'/',
+            ]);
+        }
+        if ($photonUrl = rtrim((string)env('PHOTON_URL', ''), '/')) {
+            config(['igniter-geocoder.providers.nominatim.endpoints.photon' => $photonUrl.'/api/']);
+        }
+
         // Fixed Nominatim provider (empty-title suggestions for plain addresses
         // break delivery-address selection — see Geolite\NominatimProvider).
         // Overrides the built-in creator; the chain driver resolves through it too.
