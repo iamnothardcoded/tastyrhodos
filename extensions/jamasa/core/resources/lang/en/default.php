@@ -44,6 +44,7 @@ return [
         'search_again' => 'Search again',
         'no_suggestions' => 'No suggestions found',
         'searching' => 'Searching addresses …',
+        'checking' => 'Checking address …',
         'search_label' => 'Search address',
         'search_placeholder' => 'Enter street and house number …',
         'address2_label' => 'Address extra (optional)',

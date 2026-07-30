@@ -215,7 +215,14 @@
                             wire:loading.class="disabled"
                             wire:target="onConfirm"
                             x-bind:disabled="addrBlocked"
-                        ><span class="mx-auto">@lang('igniter.orange::default.button_confirm')</span></button>
+                        >
+                            {{-- Working state: the delivery confirm runs a live geocode/zone-check
+                                 (~1–2s cold), during which the button used to just grey out and read
+                                 as dead. Show a spinner + „Adresse wird geprüft …" so it reads as
+                                 working. (Pickup confirm is instant → this only flashes.) --}}
+                            <span class="mx-auto" wire:loading.remove wire:target="onConfirm">@lang('igniter.orange::default.button_confirm')</span>
+                            <span class="mx-auto" wire:loading wire:target="onConfirm"><i class="fa fa-spinner fa-spin me-2"></i>@lang('jamasa.core::default.address.checking')</span>
+                        </button>
                     </div>
                 </div>
             </x-igniter-orange::forms.form>

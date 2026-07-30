@@ -43,6 +43,7 @@ return [
         'search_again' => 'Neu suchen',
         'no_suggestions' => 'Keine Vorschläge gefunden',
         'searching' => 'Suche Adressen …',
+        'checking' => 'Adresse wird geprüft …',
         'search_label' => 'Adresse suchen',
         'search_placeholder' => 'Straße und Hausnummer eingeben …',
         'address2_label' => 'Adresszusatz (optional)',
