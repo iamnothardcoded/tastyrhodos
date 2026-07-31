@@ -62,6 +62,7 @@ class SyncSettings extends Command
         $this->syncPaymentsAndStatuses();
         $this->syncTaxConditions();
         $this->syncSignupDiscountConditions();
+        $this->syncBottleDepositCondition();
         $this->syncLegalPagesAndGdprLink();
         $this->syncFooterAndMainNav();
 
@@ -217,6 +218,33 @@ class SyncSettings extends Command
         \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
 
         $this->line('  ✓ tax conditions: core VAT off, tax classes 7%/19% on');
+    }
+
+    /** Bottle deposit (Pfand) runs at 108 — after the discounts (104/105; a
+     *  deposit is a refundable security, never discounted) and before the
+     *  tax-class conditions (110/115), which fold the deposit into the
+     *  carrying drink's VAT base via the collectExtraBases event. */
+    protected function syncBottleDepositCondition(): void
+    {
+        if (!class_exists(\Iamnothardcoded\BottleDeposit\Extension::class)) {
+            $this->line('  · bottle-deposit condition skipped (bottledeposit extension not installed)');
+
+            return;
+        }
+
+        $conditions = (array) \Igniter\Cart\Models\CartSettings::get('conditions');
+        $conditions['bottle_deposit']['name'] = 'bottle_deposit';
+        $conditions['bottle_deposit']['label'] = 'lang:iamnothardcoded.bottledeposit::default.text_deposit';
+        $conditions['bottle_deposit']['status'] = 1;
+        $conditions['bottle_deposit']['priority'] = 108;
+        // Same code-owned-key strip as the signup bucket (see its comment).
+        foreach ($conditions as &$condition) {
+            unset($condition['className'], $condition['description']);
+        }
+        unset($condition);
+        \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
+
+        $this->line('  ✓ bottle_deposit @108 (after discounts, before tax)');
     }
 
     /** Signup discount (registered-customer discounts) runs at 104 — after

@@ -1,0 +1,33 @@
+{
+    "name": "iamnothardcoded/ti-ext-bottledeposit",
+    "type": "tastyigniter-package",
+    "description": "Bottle deposit (Pfand / statiegeld / pant) per menu item: shown next to the price, charged as its own order line — PAngV §7 compliant.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "iamnothardcoded"
+        }
+    ],
+    "require": {
+        "tastyigniter/core": "^v4.0",
+        "tastyigniter/ti-ext-cart": "^v4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Iamnothardcoded\\BottleDeposit\\": "src/"
+        }
+    },
+    "extra": {
+        "tastyigniter-extension": {
+            "code": "iamnothardcoded.bottledeposit",
+            "name": "Bottle Deposit (Pfand)",
+            "icon": {
+                "class": "fa fa-recycle",
+                "color": "#fff",
+                "backgroundColor": "#2980b9"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -36,6 +36,11 @@
         @endif
         <div class="item__price">
             {!! $menuItemData->price() > 0 ? currency_format($menuItemData->price()) : lang('igniter::main.text_free') !!}
+            {{-- Pfand hint (PAngV §7: deposit shown NEXT TO the price, never in it) --}}
+            @includeWhen(
+                class_exists(\Iamnothardcoded\BottleDeposit\Classes\DepositClasses::class) && ($menuItemData->model->deposit_class ?? false),
+                'iamnothardcoded.bottledeposit::hint', ['menuItem' => $menuItemData->model]
+            )
             @if ($menuItemData->specialIsActive())
                 <s>{!! currency_format($menuItemData->priceBeforeSpecial) !!}</s>
                 @if ($menuItemData->specialDaysRemaining())

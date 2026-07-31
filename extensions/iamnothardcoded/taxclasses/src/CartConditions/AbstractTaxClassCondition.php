@@ -96,6 +96,20 @@ abstract class AbstractTaxClassCondition extends CartCondition
             $base += (float)Location::coveredArea()->deliveryAmount($subTotal);
         }
 
+        // Loose coupling: other extensions contribute gross amounts taxed
+        // inside a class without a hard dependency (e.g. Bottle Deposit —
+        // deposits are a Nebenleistung taxed at the carrying drink's rate).
+        // Each listener returns [class => gross amount]. Added AFTER the
+        // discount allocation on purpose: these amounts are never part of the
+        // discountable Entgelt (a deposit is a refundable security).
+        if ($this->target instanceof CartContent) {
+            foreach (\Illuminate\Support\Facades\Event::dispatch('iamnothardcoded.taxclasses.collectExtraBases', [$this->target]) as $extra) {
+                if (is_array($extra)) {
+                    $base += (float)($extra[$this->taxClass] ?? 0);
+                }
+            }
+        }
+
         // Run the inclusive action against OUR base (sets calculatedValue = the
         // reported VAT, rounded once per class), then leave the cart total untouched.
         parent::calculate($base);
