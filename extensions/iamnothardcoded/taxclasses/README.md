@@ -27,7 +27,9 @@ automatically.
   to a configurable default class
 - Correct German gross handling: back-calculated inclusive VAT, per-class rounding
 - Delivery charge taxed in a configurable class (default: standard rate)
-- Zero theme changes needed — uses standard cart conditions and order totals
+- No mandatory theme changes — uses standard cart conditions and order totals
+  (one optional one-liner for the order-confirmation page, see *Theme
+  compatibility* below)
 
 ## Installation
 
@@ -40,6 +42,30 @@ automatically.
 4. Tag your categories: typically set the drinks category to *Standard* and leave
    everything else on the default class (*Reduced*). Individual items can override
    their category on the menu item form (General tab → Tax class).
+
+## Theme compatibility
+
+The tax lines are **inclusive** (they don't change the total), so they are
+stored as *non-summable* order totals. Every surface that renders all totals
+rows shows them automatically: cart summary, checkout, **invoice, order mails,
+admin order screen** — and they are persisted in `order_totals`, so exports and
+revenue/VAT queries see them regardless of theme.
+
+One exception: the stock **Orange theme's order-confirmation (success) page**
+skips non-summable rows, so the two MwSt. lines are hidden *on that page only*.
+If you want them there, override `igniter-orange::includes.order.items` in your
+child theme (copy the file from
+`ti-theme-orange/resources/views/includes/order/items.blade.php` to
+`yourtheme/includes/order/items.blade.php`) and extend the skip condition to
+let `tax*` rows through:
+
+```blade
+{{-- before --}}
+@continue(!$thickLine && !$orderTotal->is_summable && $orderTotal->code !== 'subtotal')
+{{-- after --}}
+@continue(!$thickLine && !$orderTotal->is_summable && $orderTotal->code !== 'subtotal'
+    && !str_starts_with((string)$orderTotal->code, 'tax'))
+```
 
 ## Notes & limitations
 
