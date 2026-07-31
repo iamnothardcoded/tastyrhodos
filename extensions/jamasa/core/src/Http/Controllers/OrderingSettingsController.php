@@ -56,6 +56,20 @@ class OrderingSettingsController extends Controller
 
         $action = (string) $request->input('action');
 
+        // Audit trail for state-changing actions: 2026-07-31 dev's manual_accept
+        // flipped with no identifiable actor (three UIs share one bearer token,
+        // container recreate had eaten the HTTP logs). One line per mutation —
+        // heartbeat excluded (every reminder tick would spam the log).
+        if ($action !== 'heartbeat') {
+            logger()->info(sprintf(
+                'famedo ordering-settings: action=%s payload=%s ip=%s ua=%s',
+                $action,
+                json_encode($request->except(['action'])),
+                (string) $request->ip(),
+                substr((string) $request->userAgent(), 0, 120),
+            ));
+        }
+
         switch ($action) {
             case 'pause':
                 $this->pause(
