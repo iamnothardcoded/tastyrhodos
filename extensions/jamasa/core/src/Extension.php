@@ -188,6 +188,14 @@ class Extension extends BaseExtension
             \Jamasa\Core\Classes\PayPalClient::class,
         );
 
+        // Fixed OrderManager (upstream getCartTotals persists STALE condition
+        // values — a Liefern→Abholen switch before ordering silently charges
+        // the pickup customer the delivery fee; see Classes\FixedOrderManager).
+        $this->app->singleton(
+            \Igniter\Cart\Classes\OrderManager::class,
+            \Jamasa\Core\Classes\FixedOrderManager::class,
+        );
+
         // When ordering is paused (jamasa_ordering_state.paused), force the
         // location's working schedule closed so the storefront shows the native
         // "CLOSED" state (browsable menu, checkout gated) instead of disabling
