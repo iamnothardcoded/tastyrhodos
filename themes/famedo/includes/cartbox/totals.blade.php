@@ -8,7 +8,10 @@
     </div>
 
     @foreach ($cart->conditions() as $id => $condition)
-        @continue(!$previewMode && $id === 'tip' && $tipConditionValue = $condition->getValue())
+        {{-- Skip the tip row here ONLY when the tip section below will render
+             it — with tipping disabled, an applied tip (stale session) must
+             still show as a normal row, never silently inflate the total. --}}
+        @continue(!$previewMode && $this->tippingEnabled() && $id === 'tip' && $tipConditionValue = $condition->getValue())
         <div @class(['row', 'disc' => in_array($id, ['coupon', 'signup_discount'])])>
             <span>
                 {{ $condition->getLabel() }}:

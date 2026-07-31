@@ -63,6 +63,7 @@ class SyncSettings extends Command
         $this->syncTaxConditions();
         $this->syncSignupDiscountConditions();
         $this->syncBottleDepositCondition();
+        $this->syncTipCondition();
         $this->syncLegalPagesAndGdprLink();
         $this->syncFooterAndMainNav();
 
@@ -218,6 +219,30 @@ class SyncSettings extends Command
         \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
 
         $this->line('  ✓ tax conditions: core VAT off, tax classes 7%/19% on');
+    }
+
+    /** The tip CONDITION must mirror the tipping TOGGLE. TI's enable_tipping=0
+     *  only hides the tip UI — the condition stays loaded, so a tip amount
+     *  stuck in a session cart keeps adding to the total INVISIBLY (no row:
+     *  the totals view skips the tip row in the loop and the tip section is
+     *  gated on tippingEnabled). Found 2026-08-01: dev cart 2,50 € heavier
+     *  than its rows with correct-looking VAT. */
+    protected function syncTipCondition(): void
+    {
+        $enabled = (bool) \Igniter\Cart\Models\CartSettings::get('enable_tipping');
+        $conditions = (array) \Igniter\Cart\Models\CartSettings::get('conditions');
+        if (!isset($conditions['tip'])) {
+            return;
+        }
+
+        $conditions['tip']['status'] = $enabled ? 1 : 0;
+        foreach ($conditions as &$condition) {
+            unset($condition['className'], $condition['description']);
+        }
+        unset($condition);
+        \Igniter\Cart\Models\CartSettings::set('conditions', $conditions);
+
+        $this->line(sprintf('  ✓ tip condition %s (mirrors enable_tipping)', $enabled ? 'on' : 'off'));
     }
 
     /** Bottle deposit (Pfand) runs at 108 — after the discounts (104/105; a
