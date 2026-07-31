@@ -19,12 +19,15 @@ use Igniter\Cart\Classes\OrderManager;
  * row — famedo's order items view skips `delivery` on collection orders).
  *
  * Fix: only conditions that apply under the CURRENT cart state are
- * persisted. ⚠️ isValid() alone is NOT enough: CartCondition::apply()
+ * persisted, in TWO phases. ⚠️ isValid() alone is NOT enough: apply()
  * returns early when beforeApply() === false WITHOUT resetting the `passed`
- * flag or calculatedValue — both stay stale. So the filter re-asks
- * beforeApply() (cheap, idempotent for all our conditions) AND requires
- * isValid() (the validate() outcome for conditions that did run). Same
- * filter for item-level conditions. Everything else is upstream verbatim.
+ * flag or calculatedValue — both stay stale. So phase 1 re-asks
+ * beforeApply() per condition (side effects included: good conditions reset
+ * their calculated state in there), phase 2 runs one full apply pass so
+ * every surviving condition's value is freshly computed, and only then are
+ * the rows read. Reading values right after the per-condition re-ask
+ * persisted zeroed discounts (2026-08-01 round 2). Everything else is
+ * upstream verbatim.
  *
  * Registered as the OrderManager singleton rebind in Extension boot (same
  * pattern as the PayPalClient/Mollie workarounds). Remove when fixed
@@ -34,16 +37,35 @@ class FixedOrderManager extends OrderManager
 {
     public function getCartTotals()
     {
-        // Refresh the apply chain FIRST: isValid() and calculatedValue are
-        // whatever the last apply pass left (they serialize with the session
-        // cart) — total() runs the reduce under the CURRENT order type, so
-        // the filter below never judges on a previous request's state.
+        // ⚠️ ORDER MATTERS. conditionApplies() calls beforeApply(), and
+        // well-behaved conditions RESET their calculated state in there (the
+        // signup discount zeroes calculatedValue defensively — persisting
+        // right after the filter wrote a 0,00 discount row, found 2026-08-01
+        // round 2). So: (1) decide applicability first (side effects and
+        // all), (2) THEN run the full apply chain so every surviving
+        // condition's calculatedValue is freshly computed under the current
+        // order type, (3) only then read the values.
+        $cartApplies = [];
+        foreach ($this->cart->conditions() as $condition) {
+            $cartApplies[$condition->name] = $this->conditionApplies($condition);
+        }
+
+        $itemApplies = [];
+        foreach ($this->cart->content() as $cartItem) {
+            foreach ($cartItem->conditions ?? [] as $condition) {
+                $itemApplies[$cartItem->rowId][$condition->name] = $this->conditionApplies($condition);
+            }
+        }
+
+        // Full fresh apply: recomputes calculatedValue for everything that
+        // applies now; conditions skipped by their own beforeApply keep stale
+        // values, but those are exactly the ones the applies-maps exclude.
         $this->cart->total();
 
         $itemConditions = [];
         foreach ($this->cart->content() as $cartItem) {
             foreach ($cartItem->conditions ?? [] as $condition) {
-                if (!$this->conditionApplies($condition)) {
+                if (!($itemApplies[$cartItem->rowId][$condition->name] ?? false)) {
                     continue;
                 }
 
@@ -65,7 +87,7 @@ class FixedOrderManager extends OrderManager
         }
 
         $totals = $this->cart->conditions()
-            ->filter(fn(CartCondition $condition): bool => $this->conditionApplies($condition))
+            ->filter(fn(CartCondition $condition): bool => $cartApplies[$condition->name] ?? false)
             ->map(fn(CartCondition $condition): array => [
                 'code' => $condition->name,
                 'title' => $condition->getLabel(),
