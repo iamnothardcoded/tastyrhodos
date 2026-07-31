@@ -134,6 +134,15 @@ class Extension extends BaseExtension
             // autocomplete before Nominatim is ever asked.
             'igniter-geocoder.default' => 'nominatim',
 
+            // Bound the SMTP conversation. The login-code mail (EmailCodeLogin)
+            // sends DELIBERATELY sync via Mail::send so the UI can report
+            // sent-vs-failed honestly — which means the customer's request
+            // waits on the relay. Without this, PHP's default socket timeout
+            // lets a hung relay freeze the login screen for up to ~60s; with
+            // it, worst case = 10s + a clean error + retry. Queued order
+            // mails are unaffected (worker-side, customer never waits).
+            'mail.mailers.smtp.timeout' => 10,
+
             // De-brand: suppress the `X-Powered-By: TastyIgniter` response header
             // (core PoweredBy middleware, default on). Keeps the platform's
             // framework out of a competitor's first `curl -I`. Cosmetic — nothing
