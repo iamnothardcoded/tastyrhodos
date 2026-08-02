@@ -29,12 +29,53 @@ use Igniter\Cart\Classes\OrderManager;
  * persisted zeroed discounts (2026-08-01 round 2). Everything else is
  * upstream verbatim.
  *
+ * SECOND VARIANT of the same bug class (found 2026-08-02, elgrecomarl order
+ * 15 — first real El Greco order): the filter above keeps stale conditions
+ * out of the NEW totals array, but addOrderTotals() upserts per code and
+ * NEVER DELETES, so a row persisted by an EARLIER pass survives every later
+ * pass that excludes it. The earlier pass is mundane: merely RENDERING the
+ * checkout page calls loadOrder(), which on first hit creates the order row
+ * AND writes totals under the session state of that moment — and the session
+ * order type DEFAULTS to delivery for a visitor who never touched the pill
+ * (Location::orderType() falls back to LocationModel::DELIVERY). Visit
+ * checkout → delivery row written → switch to Abholen in the fulfillment
+ * modal → place order → the collection-pass upsert orphans the delivery row,
+ * and calculateTotals() re-sums it into order_total. Dev repro order 293: a
+ * COLLECTION order with order_total 7,50 = 5,00 subtotal + 2,50 stale
+ * delivery fee. Elgrecomarl 15 showed 0,00 only because no delivery zone/fee
+ * exists there yet. Fix: after every full-set totals write (saveOrder),
+ * delete rows whose code the current pass did not produce, then re-sum.
+ *
  * Registered as the OrderManager singleton rebind in Extension boot (same
  * pattern as the PayPalClient/Mollie workarounds). Remove when fixed
  * upstream (PR to tastyigniter/ti-ext-cart — see CLAUDE.md TODO).
  */
 class FixedOrderManager extends OrderManager
 {
+    /**
+     * Codes of the totals rows produced by the most recent getCartTotals()
+     * pass — the authoritative row set for the prune in saveOrder().
+     */
+    private array $lastTotalsCodes = [];
+
+    public function saveOrder($order, array $data)
+    {
+        $order = parent::saveOrder($order, $data);
+
+        // parent::saveOrder() ran getCartTotals() (filling lastTotalsCodes)
+        // and upserted those rows. Now drop any row an earlier pass left
+        // behind that this pass did not produce (e.g. the `delivery` row from
+        // rendering checkout while the session still said delivery), and
+        // re-sum order_total without it. Empty-guard: whereNotIn with an
+        // empty list would match — and delete — every row.
+        if ($this->lastTotalsCodes !== []
+            && $order->totals()->whereNotIn('code', $this->lastTotalsCodes)->delete() > 0) {
+            $order->calculateTotals();
+        }
+
+        return $order;
+    }
+
     public function getCartTotals()
     {
         // ⚠️ ORDER MATTERS. conditionApplies() calls beforeApply(), and
@@ -111,6 +152,8 @@ class FixedOrderManager extends OrderManager
             'priority' => 999,
             'is_summable' => false,
         ];
+
+        $this->lastTotalsCodes = array_column($totals, 'code');
 
         return $totals;
     }
