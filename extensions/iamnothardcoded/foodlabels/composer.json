@@ -1,0 +1,33 @@
+{
+    "name": "iamnothardcoded/ti-ext-foodlabels",
+    "type": "tastyigniter-package",
+    "description": "Dietary badges (vegetarian/vegan/spicy) and LMIV food-information markers per menu item: allergens, additives (EU 1169/2011, German ZZulV) with an honest unknown/declared/confirmed workflow state.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "iamnothardcoded"
+        }
+    ],
+    "require": {
+        "tastyigniter/core": "^v4.0",
+        "tastyigniter/ti-ext-cart": "^v4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Iamnothardcoded\\FoodLabels\\": "src/"
+        }
+    },
+    "extra": {
+        "tastyigniter-extension": {
+            "code": "iamnothardcoded.foodlabels",
+            "name": "Food Labels (LMIV)",
+            "icon": {
+                "class": "fa fa-circle-info",
+                "color": "#fff",
+                "backgroundColor": "#276C93"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

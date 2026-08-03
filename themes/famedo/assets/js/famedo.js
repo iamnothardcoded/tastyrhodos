@@ -732,3 +732,93 @@ window.fmSelectNearestSlot = function (prevTime) {
         try { localStorage.removeItem('checkout_fields'); } catch (e) { /* storage blocked */ }
     }
 })();
+
+/* ---------- Food-info dialog (allergens/Zusatzstoffe, LMIV) ----------
+   Every menu row carries an .infobtn with its payload in data-food-info
+   (states: unknown | declared | none). One shared dialog shell lives outside
+   the Livewire component (food-info-dialog.blade.php).
+   ⚠️ CAPTURE phase is load-bearing: the row div itself has wire:click
+   add-to-cart (simple items) or the bottom-sheet trigger — a bubble-phase
+   handler runs after those, so tapping "i" would add the item to the cart. */
+(function () {
+    function els() {
+        var d = document.getElementById('foodDialog');
+        var b = document.getElementById('foodDialogBackdrop');
+        return d && b ? { d: d, b: b } : null;
+    }
+
+    function fill(d, info) {
+        var q = function (role) { return d.querySelector('[data-role="' + role + '"]'); };
+        q('dish').textContent = info.name || '';
+        var list = q('allergens'), adds = q('additives'), none = q('none'), unknown = q('unknown');
+        var stDecl = q('status-declared'), stConf = q('status-confirmed');
+        list.hidden = adds.hidden = none.hidden = unknown.hidden = true;
+        // colored verified/unverified label next to the dish name (only when data publishes)
+        stDecl.hidden = !(info.state !== 'unknown' && info.status === 'declared');
+        stConf.hidden = !(info.state !== 'unknown' && info.status === 'confirmed');
+        if (info.state === 'unknown') {
+            unknown.hidden = false;
+            return;
+        }
+        if (info.state === 'none') {
+            none.hidden = false;
+            return;
+        }
+        if (info.allergens && info.allergens.length) {
+            list.innerHTML = '';
+            info.allergens.forEach(function (name) {
+                var s = document.createElement('span');
+                s.textContent = name;
+                list.appendChild(s);
+            });
+            list.hidden = false;
+        }
+        if (info.additives && info.additives.length) {
+            adds.innerHTML = '';
+            info.additives.forEach(function (label) {
+                var s = document.createElement('span');
+                s.textContent = label;
+                adds.appendChild(s);
+            });
+            adds.hidden = false;
+        }
+    }
+
+    function open(info) {
+        var e = els();
+        if (!e) return;
+        fill(e.d, info);
+        e.d.hidden = e.b.hidden = false;
+        // next frame so the opacity transition actually runs from 0
+        requestAnimationFrame(function () {
+            e.d.classList.add('show');
+            e.b.classList.add('show');
+        });
+    }
+
+    function close() {
+        var e = els();
+        if (!e) return;
+        e.d.classList.remove('show');
+        e.b.classList.remove('show');
+        setTimeout(function () { e.d.hidden = e.b.hidden = true; }, 220);
+    }
+
+    document.addEventListener('click', function (ev) {
+        var btn = ev.target.closest && ev.target.closest('.infobtn');
+        if (btn && btn.dataset.foodInfo) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            try { open(JSON.parse(btn.dataset.foodInfo)); } catch (e) { /* malformed payload */ }
+            return;
+        }
+        if (ev.target.closest && (ev.target.closest('[data-role="close"]') || ev.target === document.getElementById('foodDialogBackdrop'))) {
+            ev.stopPropagation();
+            close();
+        }
+    }, true);
+
+    document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') close();
+    });
+})();

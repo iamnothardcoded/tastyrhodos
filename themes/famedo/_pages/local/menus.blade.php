@@ -65,6 +65,10 @@ layout: default
     <livewire:igniter-orange::menu-item-list/>
 </div>
 
+@if(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class))
+    @include('igniter-orange::includes.menu.food-info-dialog')
+@endif
+
 <div
     class="offcanvas offcanvas-bottom famedo-sheet-canvas"
     id="famedo-cart-canvas"

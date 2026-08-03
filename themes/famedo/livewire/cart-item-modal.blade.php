@@ -29,7 +29,13 @@
             @endif
 
             <div class="modal-body sheet__scroll">
-                <h4 class="sheet__title">{{ $menuItemData->name }}</h4>
+                <div class="sheet__titlerow">
+                    <h4 class="sheet__title">{{ $menuItemData->name }}</h4>
+                    @if(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class))
+                        @include('iamnothardcoded.foodlabels::badges', ['menuItem' => $menuItemData->model])
+                        @include('iamnothardcoded.foodlabels::infobtn', ['menuItem' => $menuItemData->model])
+                    @endif
+                </div>
                 @if (strlen($menuItemData->description))
                     <p class="sheet__desc">{!! $menuItemData->description !!}</p>
                 @endif

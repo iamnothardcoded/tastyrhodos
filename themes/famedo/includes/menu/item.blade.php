@@ -30,6 +30,10 @@
             @unless($isAvailable)
                 <span class="soldout-tag">@lang('igniter.cart::default.mealtimes.text_available') {{ $menuItemData->mealtimeTitles() }}</span>
             @endunless
+            @if(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class))
+                @include('iamnothardcoded.foodlabels::badges', ['menuItem' => $menuItemData->model])
+                @include('iamnothardcoded.foodlabels::infobtn', ['menuItem' => $menuItemData->model])
+            @endif
         </div>
         @if(strlen(strip_tags((string) $menuItemData->description)))
             <div class="item__desc">{!! $menuItemData->description !!}</div>
@@ -48,9 +52,9 @@
                 @endif
             @endif
         </div>
-        @includeWhen($menuItemData->hasIngredients(), 'igniter-orange::includes.menu.ingredients', [
-            'ingredients' => $menuItemData->ingredients()
-        ])
+        {{-- orange's grey ingredient pills deliberately dropped: hover-tooltip
+             UI is useless on phones — allergens/additives live in the
+             foodlabels "i" dialog instead (explicit-unknown model). --}}
     </div>
     <div class="item__side">
         @if($hasThumb)
