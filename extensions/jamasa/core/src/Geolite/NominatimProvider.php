@@ -31,13 +31,21 @@ use Throwable;
  * Registered over the built-in 'nominatim' creator in Extension::boot();
  * the chain provider resolves through the same custom creator.
  *
- * ⚠️ TEMPORARY WORKAROUND — submitted upstream as
- * https://github.com/tastyigniter/core/pull/65
- * Once that PR is merged AND our installed tastyigniter/core includes it
- * (check the release notes / `->title(` line in the vendor provider), DELETE
- * this class and its Geocoder::extend('nominatim', ...) registration in
- * Extension::boot(). Keep the region/locale DE config block — that part is
- * a famedo default, not a bug workaround.
+ * ✅ That upstream bug is FIXED: core#65 merged 2026-07-21 (`00fbf06e`) and is
+ * present in our installed tastyigniter/core v4.3.4.
+ *
+ * ⚠️ DO NOT DELETE THIS CLASS. An earlier version of this docblock said to
+ * remove it once core#65 landed — that instruction was written when this file
+ * was ONLY the title-fix shim, and following it today would tear out live
+ * famedo features that were added to it since:
+ *   - geocodeQuery() + famedoParseAddress()/famedoSynthesize() — the
+ *     geocoder-blind FAIL-OPEN (user decision 2026-07-24): an address Nominatim
+ *     cannot place must never block a real customer.
+ *   - placesAutocomplete() + famedoFetchPhoton() — the Photon-backed suggestion
+ *     system with per-tenant radius biasing (this no longer uses the vendor's
+ *     Nominatim autocomplete at all, so the original title bug is moot for us).
+ * The region/locale DE config block in Extension::boot() also stays — a famedo
+ * default, never a workaround.
  */
 class NominatimProvider extends BaseNominatimProvider
 {

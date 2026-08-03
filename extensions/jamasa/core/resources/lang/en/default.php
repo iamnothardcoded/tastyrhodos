@@ -41,6 +41,7 @@ return [
         'postcode' => 'Postcode',
         'city' => 'City',
         'number_missing' => 'Please add your house number.',
+        'required_for_delivery' => 'Please enter a delivery address before ordering.',
         'search_again' => 'Search again',
         'no_suggestions' => 'No suggestions found',
         'searching' => 'Searching addresses …',

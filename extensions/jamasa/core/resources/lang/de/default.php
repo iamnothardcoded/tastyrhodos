@@ -40,6 +40,7 @@ return [
         'postcode' => 'PLZ',
         'city' => 'Stadt',
         'number_missing' => 'Bitte gib noch deine Hausnummer an.',
+        'required_for_delivery' => 'Bitte gib eine Lieferadresse an, bevor du bestellst.',
         'search_again' => 'Neu suchen',
         'no_suggestions' => 'Keine Vorschläge gefunden',
         'searching' => 'Suche Adressen …',

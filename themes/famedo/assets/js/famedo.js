@@ -615,6 +615,110 @@ window.fmSelectNearestSlot = function (prevTime) {
     if (!attachNotesHook()) document.addEventListener('livewire:init', attachNotesHook);
 })();
 
+/* ---------- Checkout: scroll to the first validation error ----------
+   A failed „Bestellen" tap re-renders the form with error markers, but on a
+   phone the offending field is usually off-screen (identity at the top, the
+   button at the bottom) — the customer sees nothing happen. Contract used:
+   every checkout error surface renders a div with an id ending in
+   "-feedback" that EXISTS only while its error does (forms.error = @error
+   wrapper; covers field errors, delivery_address, fields.payment, terms).
+   Flow: arm on the #checkout-form submit → reveal once the commit BURST that
+   the submit kicked off has gone quiet, then scroll the first error into view
+   and focus its input.
+
+   Why debounce-until-quiet instead of acting on the first commit: one tap
+   fires several commits (the wire:model.blur of the field being left, then
+   validate, then confirm). Acting on the earliest one would scroll to the
+   PREVIOUS attempt's stale error markers, which the pending morph is about to
+   remove. Each commit reschedules, so we always read the settled DOM.
+   Finding no error does NOT disarm — a passing validate is followed by
+   confirm, and payment/processing errors surface only on that second commit.
+   Any fresh user interaction disarms, so a later unrelated commit (fulfillment
+   modal, cart) can never scroll-jack. */
+(function () {
+    var armed = false;
+    var timer = null;
+    var SETTLE_MS = 160;
+
+    document.addEventListener('submit', function (e) {
+        if (e.target && e.target.id === 'checkout-form') armed = true;
+    }, true);
+    // Capture phase: the submit-button pointerdown disarms, then the submit
+    // event re-arms a moment later — order is what makes this safe.
+    // EXCEPT taps on the submit button itself: it greys out for ~1s during the
+    // roundtrip, and an impatient customer tapping it again is retrying the SAME
+    // submit, not moving on. Disarming there would swallow the scroll for
+    // exactly the user who needs it most.
+    document.addEventListener('pointerdown', function (e) {
+        var t = e && e.target;
+        if (t && t.closest && t.closest('[data-checkout-control="submit"]')) return;
+        armed = false;
+    }, true);
+    document.addEventListener('keydown', function () { armed = false; }, true);
+
+    function firstError() {
+        var root = document.querySelector('[data-control="checkout"]');
+        if (!root) return null;
+        var nodes = root.querySelectorAll('[id$="-feedback"]');
+        // Skip anything not actually on screen. No checkout error can reach a
+        // hidden container today: the „+ Anmerkung" collapse holds only
+        // comment/delivery_comment, whose sole rule is max:500 — hitting it
+        // means the customer typed in there, which force-opens the collapse —
+        // and the one path that targets fields.comment (order-processing
+        // failure) needs two-page checkout, which famedo does not enable.
+        // This is a cheap guard so a future hidden field can't make us scroll
+        // to something invisible.
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].offsetParent !== null) return nodes[i];
+        }
+        return null;
+    }
+
+    function fullyVisible(el) {
+        var r = el.getBoundingClientRect();
+        var h = window.innerHeight || document.documentElement.clientHeight;
+        return r.top >= 8 && r.bottom <= h - 8;
+    }
+
+    function reveal() {
+        timer = null;
+        if (!armed) return;
+        var err = firstError();
+        if (!err) return;
+        armed = false;
+        // Scroll the whole field wrapper (label + input + message), not the
+        // bare error line, so the customer sees WHAT is wrong, not just why.
+        var box = err.closest('.col-sm-6') || err.closest('.famedo-co-sec') || err;
+        // Already on screen (desktop, where the form often fits): don't jump.
+        var moved = !fullyVisible(box);
+        if (moved) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var input = box.querySelector('input.is-invalid, textarea.is-invalid, select.is-invalid');
+        if (input) {
+            // Focus AFTER the smooth scroll settles: focusing mid-scroll makes
+            // the phone keyboard reflow the page and land somewhere else.
+            setTimeout(function () {
+                try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
+            }, moved ? 450 : 0);
+        }
+    }
+
+    function schedule() {
+        if (!armed) return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(reveal, SETTLE_MS);
+    }
+
+    function attachHook() {
+        if (!window.Livewire || typeof Livewire.hook !== 'function') return false;
+        Livewire.hook('commit', function (opts) {
+            if (!opts || typeof opts.succeed !== 'function') return;
+            opts.succeed(schedule);
+        });
+        return true;
+    }
+    if (!attachHook()) document.addEventListener('livewire:init', attachHook);
+})();
+
 /* ---------- Guest keep-prefilled hygiene ----------
    Once logged in, the ACCOUNT is the source of truth for checkout identity —
    the guest-era localStorage prefill is stale at best and, on a shared

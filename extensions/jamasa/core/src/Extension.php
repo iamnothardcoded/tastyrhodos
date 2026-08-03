@@ -265,6 +265,50 @@ class Extension extends BaseExtension
         // can't desync; the un-stamp branch heals any leftover from earlier
         // attempts. Session position is null for API/POS-created orders.
         // ONE afterSaveOrder listener does both order mutations then a SINGLE
+        // ---------- Delivery orders MUST carry an address (2026-08-03) ----------
+        // Backstop for a hole found on dev: three delivery orders (666/667/668)
+        // were accepted with address_id=NULL and no address data whatsoever.
+        // Upstream's own check lives in Checkout::validateCheckout() as a
+        // $validator->after() callback — it demonstrably did not block, even
+        // though OrderManager::validateDeliveryAddress() rejects that exact
+        // (empty) input when called directly, and the withValidator/after/rescue
+        // mechanism blocks correctly when exercised in isolation. Root cause
+        // therefore still UNKNOWN — this guard is deliberately independent of it.
+        //
+        // Placement: 'igniter.orange.validateCheckout' fires at the END of
+        // validateCheckout, i.e. AFTER upstream validation passed but BEFORE
+        // onConfirm calls saveOrder() — so throwing here blocks the order and
+        // nothing is persisted.
+        //
+        // Gate on Location::orderType(), NOT $order->order_type: orderType() is
+        // exactly what applyRequiredAttributes() writes onto the order at save
+        // time, so "will this be SAVED as delivery?" cannot desync from what we
+        // check. (A stale/absent session key defaults to delivery, which fails
+        // safe — it can only ever ask for an address, never skip asking.)
+        // The 'delivery_address' key matches the theme's existing error surface.
+        Event::listen('igniter.orange.validateCheckout', function($data = null, $order = null): void {
+            if (\Igniter\Local\Facades\Location::orderType() !== \Igniter\Local\Models\Location::DELIVERY) {
+                return;
+            }
+
+            $fields = (array)$data;
+            if (filled($fields['address_1'] ?? null) || filled($fields['address_id'] ?? null)) {
+                return;
+            }
+
+            \Illuminate\Support\Facades\Log::warning('famedo: blocked a delivery order with no address', [
+                'order_id' => $order?->order_id,
+                'order_type_in_memory' => $order?->order_type,
+                'isDeliveryType' => $order?->isDeliveryType(),
+                'session_orderType' => \Igniter\Local\Facades\Location::orderType(),
+                'userPositionValid' => \Igniter\Local\Facades\Location::userPosition()?->isValid(),
+            ]);
+
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'delivery_address' => lang('jamasa.core::default.address.required_for_delivery'),
+            ]);
+        });
+
         // order write (was two listeners → two writes on the hottest path):
         //  (a) rescue-note stamp for geocoder-blind delivery orders;
         //  (b) order ↔ customer identity for logged-in customers.
