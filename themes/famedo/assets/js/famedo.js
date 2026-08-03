@@ -960,6 +960,18 @@ window.fmSelectNearestSlot = function (prevTime) {
             u.chips.hidden = true;
         } else {
             u.chips.hidden = false;
+            // per-chip auto-hide: a chip whose code matches NO dish would only
+            // ever produce the empty state (e.g. Scharf on a menu with no
+            // spicy dishes) — hide it; if its filter was active, drop it.
+            u.chips.querySelectorAll('.fchip[data-f]:not([data-f="all"])').forEach(function (c) {
+                var f = c.dataset.f;
+                var present = !!document.querySelector('.item[data-diet~="' + f + '"]');
+                c.classList.toggle('gone', !present);
+                if (!present && active.has(f)) {
+                    active.delete(f);
+                    if (f === 'vegan' && merged) splitVeg(false);
+                }
+            });
         }
 
         var total = 0;

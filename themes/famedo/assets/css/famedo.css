@@ -837,3 +837,4 @@ body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-clo
 /* fusion microinteraction: veg chip fused into the vegan chip (levels, not
    independent filters — famedo.js fuseVeg/splitVeg drive the animation) */
 .famedo .fchip.mergedaway{display:none}
+.famedo .fchip.gone{display:none}
