@@ -50,4 +50,21 @@ class DietLabels
 
         return $codes;
     }
+
+    /**
+     * Codes for client-side filter MATCHING, canonical order. Inverse of the
+     * display rule: vegan counts as vegetarian, so vegan implies +veg — a
+     * "vegetarian" filter must include vegan dishes.
+     *
+     * @return string[]
+     */
+    public static function filterCodes(array $codes): array
+    {
+        $codes = array_values(array_intersect(self::codes(), $codes));
+        if (in_array('vegan', $codes, true) && !in_array('veg', $codes, true)) {
+            $codes[] = 'veg';
+        }
+
+        return array_values(array_intersect(self::codes(), $codes));
+    }
 }

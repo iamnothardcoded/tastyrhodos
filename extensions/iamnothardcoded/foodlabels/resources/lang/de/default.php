@@ -33,6 +33,16 @@ return [
     'additive_koffein' => 'koffeinhaltig',
     'additive_chinin' => 'chininhaltig',
 
+    // Storefront-Filter (Diät-Chips + Status-Leiste + Leerzustand)
+    'filter_all' => 'Alle',
+    'filter_only' => 'Nur %s',
+    'filter_dish' => 'Gericht',
+    'filter_dishes' => 'Gerichte',
+    'filter_clear' => 'Aufheben',
+    'filter_empty_title' => 'Keine passenden Gerichte',
+    'filter_empty_body' => 'Diese Filter-Kombination trifft auf kein Gericht zu.',
+    'filter_empty_clear' => 'Filter aufheben',
+
     // Storefront-Dialog
     'text_dialog_title' => 'Allergene & Zusatzstoffe',
     'text_dialog_allergens' => 'Allergene',

@@ -57,12 +57,21 @@ layout: default
     @endunless
 @endif
 
+{{-- Diet-filter chip row: normal flow, may scroll away — the sticky strip
+     below carries the "you are filtered" reminder (decided 2026-08-03). --}}
+@includeWhen(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class), 'iamnothardcoded.foodlabels::filter-chips')
+
 <div class="famedo-tabs sticky-top">
     <x-igniter-orange::category-list/>
+    {{-- inside the sticky wrapper: stays visible while filtered, and the
+         anchor-scroll offset ($('.sticky-top').outerHeight()) auto-corrects --}}
+    @includeWhen(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class), 'iamnothardcoded.foodlabels::filter-strip')
 </div>
 
 <div class="menu">
     <livewire:igniter-orange::menu-item-list/>
+    {{-- sibling of the Livewire root — morphs can't wipe it --}}
+    @includeWhen(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class), 'iamnothardcoded.foodlabels::filter-empty')
 </div>
 
 @if(class_exists(\Iamnothardcoded\FoodLabels\Classes\FoodInfo::class))

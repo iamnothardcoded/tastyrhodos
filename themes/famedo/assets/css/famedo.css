@@ -803,3 +803,37 @@ body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-clo
 .famedo .food-dialog__status{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:800;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:6px;vertical-align:1px}
 .famedo .food-dialog__status--declared{color:#8A4E22;background:#F6E8DC}
 .famedo .food-dialog__status--confirmed{color:var(--veg);background:var(--veg-tint)}
+
+/* ---------- Diet filter (foodlabels v2): chip row + status strip + empty ----------
+   Chip row scrolls away by design; the strip (2nd row INSIDE .famedo-tabs
+   sticky wrapper) is the persistent "you are filtered" reminder. Rows/sections
+   hide via .fd-hide (namespaced — .hidden is too generic), rail chips of
+   emptied categories via .gone. */
+.famedo .dietfilter{padding:12px 0 2px}
+.famedo .dietfilter__row{display:flex;gap:8px;overflow-x:auto;padding:0 14px;scrollbar-width:none}
+.famedo .dietfilter__row::-webkit-scrollbar{display:none}
+.famedo .fchip{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid var(--line-strong);border-radius:999px;font-size:12.5px;font-weight:600;background:var(--surface);color:var(--ink);cursor:pointer;transition:.15s;white-space:nowrap}
+.famedo .fchip svg{width:13px;height:13px}
+.famedo .fchip[data-f="all"].on{background:var(--ink);color:#fff;border-color:transparent}
+.famedo .fchip[data-f="veg"].on{background:var(--veg);color:#fff;border-color:transparent}
+.famedo .fchip[data-f="vegan"].on{background:var(--vegan);color:#fff;border-color:transparent}
+.famedo .fchip[data-f="hot"].on{background:var(--hot);color:#fff;border-color:transparent}
+.famedo .fstrip{display:flex;align-items:center;gap:8px;margin-top:8px;padding:7px 14px;font-size:12.5px;font-weight:600;color:#fff}
+.famedo .fstrip[hidden]{display:none}
+.famedo .fstrip--veg{background:var(--veg)}
+.famedo .fstrip--vegan{background:var(--vegan)}
+.famedo .fstrip--hot{background:var(--hot)}
+.famedo .fstrip--multi{background:var(--ink)}
+.famedo .fstrip--none{background:#8A4E22}
+.famedo .fstrip svg{width:13px;height:13px;flex:none}
+.famedo .fstrip__txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.famedo .fstrip__clear{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:none;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;flex:none}
+.famedo .fempty{padding:44px 24px;text-align:center;color:var(--muted)}
+.famedo .fempty[hidden]{display:none}
+.famedo .fempty__t{font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--ink);margin-bottom:6px}
+.famedo .fempty button{margin-top:14px;padding:10px 18px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+.famedo .item.fd-hide,.famedo .cat.fd-hide{display:none}
+.famedo .famedo-tabs .nav-link.gone{display:none}
+/* fusion microinteraction: veg chip fused into the vegan chip (levels, not
+   independent filters — famedo.js fuseVeg/splitVeg drive the animation) */
+.famedo .fchip.mergedaway{display:none}

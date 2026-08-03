@@ -822,3 +822,267 @@ window.fmSelectNearestSlot = function (prevTime) {
         if (ev.key === 'Escape') close();
     });
 })();
+
+/* ---------- Diet filter (foodlabels v2) ----------
+   Client-side AND-filter over data-diet on the item rows (raw codes, with
+   vegan→veg already expanded server-side by DietLabels::filterCodes). State
+   lives in module scope and on morph-immune elements (chip row, sticky strip,
+   rail links, empty block); everything applied to .item/.cat is wiped by the
+   MenuItemList morph on every add-to-cart, so apply() re-runs after each
+   Livewire commit settles (same debounce pattern as the checkout error
+   scroller). The whole UI stays hidden when the rendered menu carries no
+   diet-tagged rows — an untagged tenant never sees a filter. */
+(function () {
+    var active = new Set();
+    var timer = null, SETTLE_MS = 160;
+    // veg + vegan are LEVELS of one dimension, never both active: selecting
+    // the second one FUSES the veg chip into the vegan chip (reverse cell
+    // division — decided from the click-dummy 2026-08-03); deselecting vegan
+    // splits it back out. `merged` = veg chip currently fused away.
+    var merged = false;
+    var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function ui() {
+        var chips = document.querySelector('[data-diet-filter]');
+        if (!chips) return null;
+        return {
+            chips: chips,
+            strip: document.querySelector('[data-diet-strip]'),
+            empty: document.querySelector('[data-diet-empty]'),
+        };
+    }
+
+    function chipEl(f) {
+        var u = ui();
+        return u ? u.chips.querySelector('.fchip[data-f="' + f + '"]') : null;
+    }
+
+    function centerDx(from, to) {
+        var a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+        return (b.left + b.width / 2) - (a.left + a.width / 2);
+    }
+
+    function veganGulp(el, delay) {
+        if (RM || !el || !el.animate) return;
+        setTimeout(function () {
+            el.animate([
+                {transform: 'scale(1)'},
+                {transform: 'scale(1.22,.84)', offset: .35},
+                {transform: 'scale(.94,1.08)', offset: .65},
+                {transform: 'scale(1)'}
+            ], {duration: 420, easing: 'ease-out'});
+        }, delay || 0);
+    }
+
+    // veg chip travels into the vegan chip, the row closes over its place.
+    // Both animations hold their end state (fill:'forwards') until the chip is
+    // display:none — without that, the chip snaps back to base styles for one
+    // frame between animation end and hide, flashing "Vegetarisch" mid-fusion.
+    var fuseAnims = [];
+    function fuseVeg() {
+        var veg = chipEl('veg'), vegan = chipEl('vegan');
+        if (!veg || merged) return;
+        merged = true;
+        if (RM || !veg.animate || !vegan) {
+            veg.classList.add('mergedaway');
+            return;
+        }
+        var dx = centerDx(veg, vegan);
+        veg.style.pointerEvents = 'none';
+        var a1 = veg.animate([
+            {transform: 'translateX(0) scale(1)', opacity: 1},
+            {transform: 'translateX(' + dx * .6 + 'px) scale(.8)', opacity: .9, offset: .6},
+            {transform: 'translateX(' + dx + 'px) scale(.2)', opacity: 0}
+        ], {duration: 400, easing: 'cubic-bezier(.5,0,.65,1)', fill: 'forwards'});
+        fuseAnims.push(a1);
+        a1.onfinish = function () {
+            var w = veg.offsetWidth;
+            veg.style.overflow = 'hidden';
+            var a2 = veg.animate([
+                {width: w + 'px', paddingLeft: '12px', paddingRight: '12px', borderWidth: '1.5px'},
+                {width: '0px', paddingLeft: '0px', paddingRight: '0px', borderWidth: '0px'}
+            ], {duration: 200, easing: 'ease', fill: 'forwards'});
+            fuseAnims.push(a2);
+            a2.onfinish = function () {
+                veg.classList.add('mergedaway'); // display:none first...
+                fuseAnims.forEach(function (a) { a.cancel(); }); // ...then release the holds
+                fuseAnims = [];
+                veg.style.cssText = '';
+            };
+        };
+        veganGulp(vegan, 300);
+    }
+
+    // cell division: the veg chip buds back out of the vegan chip
+    function splitVeg(animate) {
+        var veg = chipEl('veg'), vegan = chipEl('vegan');
+        merged = false;
+        fuseAnims.forEach(function (a) { a.cancel(); }); // fusion may still be mid-flight
+        fuseAnims = [];
+        if (!veg) return;
+        veg.classList.remove('mergedaway');
+        veg.style.cssText = '';
+        if (!animate || RM || !veg.animate || !vegan) return;
+        var dx = centerDx(veg, vegan);
+        vegan.animate([
+            {transform: 'scale(1)'},
+            {transform: 'scale(1.14,.88)', offset: .4},
+            {transform: 'scale(1)'}
+        ], {duration: 320, easing: 'ease-out'});
+        veg.animate([
+            {transform: 'translateX(' + dx + 'px) scale(.2)', opacity: 0},
+            {transform: 'translateX(' + dx * .35 + 'px) scale(.85)', opacity: 1, offset: .55},
+            {transform: 'translateX(0) scale(1.06)', offset: .85},
+            {transform: 'translateX(0) scale(1)'}
+        ], {duration: 430, easing: 'cubic-bezier(.3,.7,.3,1)'});
+    }
+
+    function railLinkFor(sec) {
+        var head = sec.querySelector('[id^="category-"][id$="-heading"]');
+        return head ? document.querySelector('#navbar-categories a[href="#' + head.id + '"]') : null;
+    }
+
+    function rowMatches(el) {
+        var tags = (el.dataset.diet || '').split(' ');
+        var ok = true;
+        active.forEach(function (f) { if (tags.indexOf(f) < 0) ok = false; });
+        return ok;
+    }
+
+    function apply() {
+        var u = ui();
+        if (!u) return;
+
+        // auto-hide: this render carries no tagged rows -> no filter UI, clean state
+        if (!document.querySelector('.item[data-diet]')) {
+            active.clear();
+            if (merged) splitVeg(false);
+            u.chips.hidden = true;
+        } else {
+            u.chips.hidden = false;
+        }
+
+        var total = 0;
+        var secs = document.querySelectorAll('.menu-group-item.cat');
+        if (secs.length) {
+            secs.forEach(function (sec) {
+                var items = sec.querySelectorAll('.item'), vis = 0;
+                items.forEach(function (el) {
+                    var show = rowMatches(el);
+                    el.classList.toggle('fd-hide', !show);
+                    if (show) { vis++; total++; }
+                });
+                sec.classList.toggle('fd-hide', vis === 0);
+                var link = railLinkFor(sec);
+                if (link) link.classList.toggle('gone', vis === 0);
+                var count = sec.querySelector('.cat__count');
+                // restore by recount: server count == .item nodes per section
+                if (count) count.textContent = active.size ? vis : items.length;
+            });
+        } else {
+            // category-permalink page: flat list, no sections/counts/rail
+            document.querySelectorAll('.menu-items .item').forEach(function (el) {
+                var show = rowMatches(el);
+                el.classList.toggle('fd-hide', !show);
+                if (show) total++;
+            });
+        }
+
+        if (u.empty) u.empty.hidden = !(active.size && total === 0);
+        syncStrip(u, total);
+        syncChips(u);
+        refreshSpy();
+    }
+
+    function syncChips(u) {
+        u.chips.querySelectorAll('.fchip').forEach(function (c) {
+            var f = c.dataset.f;
+            c.classList.toggle('on', f === 'all' ? active.size === 0 : active.has(f));
+        });
+    }
+
+    function syncStrip(u, total) {
+        var s = u.strip;
+        if (!s) return;
+        s.hidden = active.size === 0;
+        if (s.hidden) {
+            s.className = 'fstrip';
+            return;
+        }
+        var codes = Array.from(active);
+        var names = codes.map(function (f) { return s.dataset['label' + f.charAt(0).toUpperCase() + f.slice(1)] || f; });
+        var txt = codes.length === 1 ? s.dataset.txtOnly.replace('%s', names[0]) : names.join(' + ');
+        s.querySelector('[data-diet-strip-txt]').textContent =
+            txt + ' — ' + total + ' ' + (total === 1 ? s.dataset.txtDish : s.dataset.txtDishes);
+        s.className = 'fstrip' + (total === 0 ? ' fstrip--none'
+            : codes.length === 1 ? ' fstrip--' + codes[0] : ' fstrip--multi');
+    }
+
+    function refreshSpy() {
+        var root = document.querySelector('[data-bs-spy="scroll"]');
+        var spy = root && window.bootstrap && bootstrap.ScrollSpy && bootstrap.ScrollSpy.getInstance(root);
+        if (spy) spy.refresh();
+    }
+
+    // bubble phase is fine here: chips/strip/empty all live OUTSIDE the
+    // wire:click rows (unlike the .infobtn, which needs capture)
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest) return;
+        var chip = e.target.closest('[data-diet-filter] .fchip');
+        if (chip) {
+            var f = chip.dataset.f;
+            if (f === 'all') {
+                active.clear();
+                if (merged) splitVeg(true);
+            } else if (f === 'vegan') {
+                if (active.has('vegan')) {
+                    active.delete('vegan');
+                    if (merged) splitVeg(true); // division on the way out
+                } else {
+                    // vegan active = veg chip absorbed, ALWAYS (also when
+                    // vegan is tapped first — the fusion IS the explanation)
+                    active.delete('veg');
+                    active.add('vegan');
+                    fuseVeg();
+                }
+            } else if (f === 'veg') {
+                if (active.has('vegan')) {
+                    // safety only — the veg chip is fused away while vegan
+                    // is active and can't normally be tapped
+                    fuseVeg();
+                    return;
+                }
+                if (active.has('veg')) active.delete('veg');
+                else active.add('veg');
+            } else if (active.has(f)) {
+                active.delete(f);
+            } else {
+                active.add(f);
+            }
+            apply();
+            return;
+        }
+        if (e.target.closest('[data-diet-clear]')) {
+            active.clear();
+            if (merged) splitVeg(true);
+            apply();
+        }
+    });
+
+    // re-apply after every Livewire morph settles (empty-set apply is a cheap
+    // no-op that also re-runs the auto-hide check)
+    function schedule() {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(apply, SETTLE_MS);
+    }
+    function attachHook() {
+        if (!window.Livewire || typeof Livewire.hook !== 'function') return false;
+        Livewire.hook('commit', function (opts) {
+            if (opts && typeof opts.succeed === 'function') opts.succeed(schedule);
+        });
+        return true;
+    }
+    if (!attachHook()) document.addEventListener('livewire:init', attachHook);
+
+    apply();
+})();

@@ -34,6 +34,16 @@ return [
     'additive_koffein' => 'koffeinhaltig (contains caffeine)',
     'additive_chinin' => 'chininhaltig (contains quinine)',
 
+    // Storefront filter (diet chips + status strip + empty state)
+    'filter_all' => 'All',
+    'filter_only' => 'Only %s',
+    'filter_dish' => 'dish',
+    'filter_dishes' => 'dishes',
+    'filter_clear' => 'Clear',
+    'filter_empty_title' => 'No matching dishes',
+    'filter_empty_body' => 'No dish matches this filter combination.',
+    'filter_empty_clear' => 'Clear filters',
+
     // Storefront dialog
     'text_dialog_title' => 'Allergens & additives',
     'text_dialog_allergens' => 'Allergens',

@@ -5,6 +5,9 @@
      the <i> with wire:loading.class (menu-item-list JS spins it). --}}
 @php($hasThumb = $showThumb && $menuItemData->hasThumb())
 @php($isAvailable = $menuItemData->mealtimeIsAvailable())
+@php($__dietFilter = class_exists(\Iamnothardcoded\FoodLabels\Classes\DietLabels::class)
+    ? \Iamnothardcoded\FoodLabels\Classes\DietLabels::filterCodes((array)($menuItemData->model->diet_labels ?? []))
+    : [])
 <div
     id="menu{{ $menuItemData->id }}"
     @class([
@@ -13,6 +16,9 @@
         'soldout' => !$isAvailable,
         'cursor-pointer' => $isAvailable,
     ])
+    @if($__dietFilter !== [])
+        data-diet="{{ implode(' ', $__dietFilter) }}"
+    @endif
     @if($isAvailable)
         @if($menuItemData->hasOptions())
             data-toggle="orange-modal"
