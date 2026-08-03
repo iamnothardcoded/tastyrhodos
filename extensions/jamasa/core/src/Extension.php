@@ -382,6 +382,35 @@ class Extension extends BaseExtension
             }
         });
 
+        // ---------- German decimal input on admin forms (2026-08-03) ----------
+        // Core's field_currency partial DISPLAYS values with the currency's
+        // decimal_sign ("11,50" for EUR/de) while the `numeric` validation rule
+        // only accepts machine format — the field renders a value its own form
+        // refuses to save (owner types 11,50 → "price must be a number").
+        // Normalize German-formatted decimals ("11,50", "1.234,56") to machine
+        // format for every field that is explicitly `numeric`-validated, BEFORE
+        // the validator is built (dataHolder->data feeds both validation and
+        // validated()/save). Dot-decimal input ("11.50") stays untouched.
+        Event::listen('system.formRequest.extendValidator', function ($request, $dataHolder): void {
+            foreach ($dataHolder->rules as $key => $rules) {
+                if (str_contains((string)$key, '*')) {
+                    continue; // wildcard rules: no single data path to rewrite
+                }
+                $ruleList = is_array($rules) ? $rules : explode('|', (string)$rules);
+                if (!in_array('numeric', $ruleList, true)) {
+                    continue;
+                }
+                $value = \Illuminate\Support\Arr::get($dataHolder->data, $key);
+                if (is_string($value) && preg_match('/^-?(\d{1,3}(\.\d{3})*|\d+),\d+$/', $value)) {
+                    \Illuminate\Support\Arr::set(
+                        $dataHolder->data,
+                        $key,
+                        str_replace(',', '.', str_replace('.', '', $value)),
+                    );
+                }
+            }
+        });
+
         // Admin → Orders list: show the customer-facing pickup code as a column.
         // The pickup code is DERIVED from the order hash (not a DB column), so the
         // column is backed by the real `hash` column (the Lists widget emits
