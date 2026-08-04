@@ -30,6 +30,19 @@ return [
         'sheet_locked' => 'Gerade sind leider keine Bestellungen möglich.',
     ],
 
+    // Same-day-Vorbestellung: geschlossen, aber Slots für heute buchbar.
+    'preorder' => [
+        'overlay_title' => 'Wir öffnen heute um %s',
+        'overlay_text' => 'Du kannst jetzt schon vorbestellen – wähle einfach deine Wunschzeit und dein Essen ist pünktlich fertig.',
+        'overlay_cta' => 'Jetzt vorbestellen',
+        'banner_title' => 'Vorbestellung für heute',
+        'banner_text' => 'Gerade geschlossen – wir öffnen um %s.',
+        'banner_slot' => 'Wunschzeit: heute, %s –',
+        'banner_link' => 'ändern',
+        'slots_today' => 'Wunschzeit für heute',
+        'same_day_only' => 'Vorbestellungen sind nur für heute möglich – bitte wähle eine neue Zeit.',
+    ],
+
     'cart' => [
         'amount_missing' => ':amount fehlen noch',
     ],

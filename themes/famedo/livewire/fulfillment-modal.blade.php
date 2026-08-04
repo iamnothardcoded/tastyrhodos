@@ -46,7 +46,19 @@
                         <button type="button" class="btn-close famedo-sheet-close" data-bs-dismiss="modal" aria-label="{{ __('jamasa.core::default.ui.close') }}"></button>
                     </div>
                     <div class="modal-body p-4 py-2">
+                        {{-- Same-day preorder: while the schedule is closed NOW,
+                             ASAP is meaningless (core's orderTimeIsAsap() already
+                             mounts isAsap=false) — hide the card and relabel the
+                             divider; only the slot bubbles remain. The same-day
+                             timeslot filter (jamasa) collapses $timeslotDates to
+                             today, so the „Morgen" date bubbles vanish with it. --}}
+                        @php
+                            // Block form on purpose: the paren form @php(...) miscompiles
+                            // with ?:/?-> inside (unterminated <?php → raw-PHP island).
+                            $fmScheduleOpen = (bool) \Igniter\Local\Facades\Location::getOrderType($orderType ?: null)?->getSchedule()->isOpen();
+                        @endphp
                         <div id="local-timeslot" class="pb-3">
+                            @if($fmScheduleOpen)
                             <button
                                 type="button"
                                 @class(['pickopt', 'selected' => $isAsap])
@@ -60,9 +72,10 @@
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="pickopt__check"><path d="M20 6L9 17l-5-5"/></svg>
                                 @endif
                             </button>
+                            @endif
 
                             @if(count($timeslotDates))
-                                <div class="pickdiv"><span>@lang('igniter.local::default.text_later')</span></div>
+                                <div class="pickdiv"><span>@lang($fmScheduleOpen ? 'igniter.local::default.text_later' : 'jamasa.core::default.preorder.slots_today')</span></div>
 
                                 @if(count($timeslotDates) > 1)
                                     <div class="pickdates">

@@ -220,6 +220,14 @@ body.famedo{
 .famedo .closedbar__t{font-family:var(--font-head);font-weight:800;font-size:14px}
 .famedo .closedbar__s{font-size:12px;opacity:.85;margin-top:1px}
 
+/* Same-day preorder bar: closed now but slots for today bookable — warm/inviting
+   (brand tint like the pausebar), NOT the dark closed look; no lockout applies. */
+.famedo .preorderbar{display:flex;margin:10px 12px 0;padding:12px 15px;border-radius:14px;background:var(--brand-tint);color:var(--brand-deep);align-items:center;gap:11px}
+.famedo .preorderbar__ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.55);display:grid;place-items:center;flex:none}
+.famedo .preorderbar__t{font-family:var(--font-head);font-weight:800;font-size:14px}
+.famedo .preorderbar__s{font-size:12px;opacity:.9;margin-top:1px}
+.famedo .preorderbar__s a{color:inherit;font-weight:700;text-decoration:underline}
+
 /* ---------- Signup-discount teasers ---------- */
 /* Menu-top welcome-offer banner (guests). Flat brand + design-system shadow. */
 .famedo .promo{display:flex;align-items:center;gap:13px;margin:10px 12px 0;padding:14px 16px;border-radius:var(--r-md);background:var(--brand);color:#fff;text-decoration:none;box-shadow:var(--shadow-md)}
@@ -740,6 +748,7 @@ body.famedo.famedo-notes-open .addnote-link{display:none}
 .famedo .closed-card__btn{width:100%;padding:13px;border:none;border-radius:var(--r-sm);background:var(--brand);color:#fff;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(200,80,10,.25)}
 .famedo .closed-card__btn:active{transform:scale(.98)}
 .famedo .pause-ic{background:var(--brand-tint)!important;color:var(--brand-deep)!important}
+.famedo .preorder-ic{background:var(--brand-tint)!important;color:var(--brand-deep)!important}
 
 /* Resume toast (green, top center) — famedo- prefixed; bare .toast is Bootstrap's */
 .famedo .famedo-toast{position:fixed;left:50%;top:14px;z-index:1200;transform:translateX(-50%) translateY(-140%);background:#2F7040;color:#fff;font-weight:700;font-size:13.5px;padding:12px 18px;border-radius:var(--r-sm);box-shadow:var(--shadow-lg);transition:transform .35s cubic-bezier(.2,.8,.2,1)}

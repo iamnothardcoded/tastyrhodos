@@ -31,6 +31,19 @@ return [
         'sheet_locked' => 'Ordering is currently not possible.',
     ],
 
+    // Same-day preorder: closed right now, but slots for later today bookable.
+    'preorder' => [
+        'overlay_title' => 'We open today at %s',
+        'overlay_text' => 'You can already pre-order now – just pick your preferred time and your food will be ready on the dot.',
+        'overlay_cta' => 'Pre-order now',
+        'banner_title' => 'Pre-order for today',
+        'banner_text' => 'Currently closed – we open at %s.',
+        'banner_slot' => 'Preferred time: today, %s –',
+        'banner_link' => 'change',
+        'slots_today' => 'Preferred time for today',
+        'same_day_only' => 'Pre-orders are only possible for today – please pick a new time.',
+    ],
+
     'cart' => [
         'amount_missing' => ':amount to go',
     ],

@@ -442,9 +442,10 @@
     // stopPropagation keeps it from ever reaching the row) and answer with the
     // state-aware toast — the server's generic wording ("outside our hours")
     // is wrong during a pause, and a dead row reads as "broken".
+    // Preorder is NOT locked (same-day slots bookable) — never intercept there.
     var lockedMsg = overlay.getAttribute('data-locked-toast') || '';
     var warnToast = null;
-    document.addEventListener('click', function (e) {
+    if (state !== 'preorder') document.addEventListener('click', function (e) {
         var row = e.target.closest && e.target.closest('[data-control="menu-item"]');
         if (!row) return;
         e.preventDefault();
@@ -471,7 +472,11 @@
                 if (!data || !data.state || data.state === state) return;
                 store.del(ACK + 'paused');
                 store.del(ACK + 'closed');
-                if (data.state === 'open') store.set(RESUMED, '1');
+                store.del(ACK + 'preorder');
+                // Green "wieder möglich"-toast only when ordering was actually
+                // blocked — preorder→open is just a banner swap, ordering worked
+                // the whole time.
+                if (data.state === 'open' && state !== 'preorder') store.set(RESUMED, '1');
                 location.reload();
             })
             .catch(function () { /* offline/hiccup -> next tick */ });

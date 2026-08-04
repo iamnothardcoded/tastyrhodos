@@ -19,15 +19,37 @@
             && ($ovOpenTime = $ovSchedule->getOpenTime())) {
             $ovNextOpen = make_carbon($ovOpenTime)->isoFormat(lang('system::lang.moment.day_time_format_short'));
         }
+        // Preorder = same-day by construction → time-only format ("17:00").
+        $ovPreorderOpen = null;
+        if ($ovState === 'preorder'
+            && ($ovSchedule = \Igniter\Local\Facades\Location::getOrderType()?->getSchedule())
+            && ($ovOpenTime = $ovSchedule->getOpenTime())) {
+            $ovPreorderOpen = make_carbon($ovOpenTime)->isoFormat(lang('system::lang.moment.time_format'));
+        }
     @endphp
+    {{-- preorder carries NO data-locked-toast: ordering is possible, nothing is
+         locked — famedo.js also skips the row-click intercept for this state. --}}
     <div class="closed-overlay" id="famedoOrderingOverlay" data-famedo-ordering-state="{{ $ovState }}"
-        data-locked-toast="{{ $ovState === 'paused'
+        data-locked-toast="{{ $ovState === 'preorder' ? '' : ($ovState === 'paused'
             ? \Jamasa\Core\Helpers\OrderingState::message()
             : ($ovNextOpen
                 ? sprintf(lang('jamasa.core::default.overlay.closed_text'), $ovNextOpen)
-                : lang('jamasa.core::default.overlay.closed_text_notime')) }}">
+                : lang('jamasa.core::default.overlay.closed_text_notime'))) }}">
         <div class="closed-card" role="alertdialog" aria-modal="true" aria-labelledby="famedoOverlayTitle">
-            @if ($ovState === 'paused')
+            @if ($ovState === 'preorder')
+                <div class="closed-card__ic preorder-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </div>
+                <div class="closed-card__t" id="famedoOverlayTitle">
+                    @if ($ovPreorderOpen)
+                        {{ sprintf(lang('jamasa.core::default.preorder.overlay_title'), $ovPreorderOpen) }}
+                    @else
+                        @lang('jamasa.core::default.preorder.banner_title')
+                    @endif
+                </div>
+                <p class="closed-card__s">@lang('jamasa.core::default.preorder.overlay_text')</p>
+                <button type="button" class="closed-card__btn" data-famedo-overlay-dismiss>@lang('jamasa.core::default.preorder.overlay_cta')</button>
+            @elseif ($ovState === 'paused')
                 <div class="closed-card__ic pause-ic">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="5" width="3.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="3.5" height="14" rx="1.2"/></svg>
                 </div>

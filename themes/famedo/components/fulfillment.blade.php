@@ -78,6 +78,35 @@
                 <div class="pausebar__s">{{ \Jamasa\Core\Helpers\OrderingState::message() }}</div>
             </div>
         </div>
+    @elseif ($activeOrderType && !$activeOrderType->isDisabled()
+        && !$activeOrderType->getSchedule()->isOpen()
+        && \Jamasa\Core\Helpers\Preorder::isAvailable())
+        {{-- Same-day preorder: closed now, slots for later today bookable — warm
+             inviting bar instead of the dark closedbar; NO lockout (layout state
+             is 'preorder'). Shows the auto/selected slot (component mounts
+             orderDateTime to the first valid slot while closed) + time-only
+             modal entrance, mirroring the open-state mode__info. --}}
+        @php($pbOpenTime = ($pbT = $activeOrderType->getSchedule()->getOpenTime())
+            ? make_carbon($pbT)->isoFormat(lang('system::lang.moment.time_format'))
+            : null)
+        <div class="preorderbar">
+            <div class="preorderbar__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <div>
+                <div class="preorderbar__t">@lang('jamasa.core::default.preorder.banner_title')</div>
+                <div class="preorderbar__s">
+                    @if ($pbOpenTime)
+                        {{ sprintf(lang('jamasa.core::default.preorder.banner_text'), $pbOpenTime) }}
+                    @endif
+                    {{ sprintf(lang('jamasa.core::default.preorder.banner_slot'), $orderDateTime->isoFormat(lang('system::lang.moment.time_format'))) }}
+                    <a
+                        role="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#fulfillmentModal"
+                        data-famedo-time-only="1"
+                    >@lang('jamasa.core::default.preorder.banner_link')</a>
+                </div>
+            </div>
+        </div>
     @elseif (!$activeOrderType || $activeOrderType->isDisabled() || !$activeOrderType->getSchedule()->isOpen())
         {{-- Admin-disabled OR after-hours (isDisabled() is only the admin toggle) —
              both show the dark closedbar; next-open time when the schedule has one. --}}

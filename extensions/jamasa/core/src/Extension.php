@@ -202,6 +202,38 @@ class Extension extends BaseExtension
         // order types (redirect loop) or the location (500). See PauseWorkingSchedule.
         Event::listen(WorkingScheduleCreatedEvent::class, [PauseWorkingSchedule::class, 'handle']);
 
+        // Same-day preorder, constraint 1/2 (see Helpers\Preorder): future_orders
+        // needs days>=1 to bypass core's closed-now gate, which would also offer
+        // TOMORROW's slots — platform semantic is strictly same-day, so invalidate
+        // every non-today slot at generation time (kills the „Morgen" date bubble
+        // at the source). Reservation schedules keep their own rules. Deliberate
+        // v1 tradeoff: past-midnight slots of tonight's window (open until 01:00)
+        // are lost — no current tenant opens past midnight. Return null (not true)
+        // when we don't object, so other listeners still get asked.
+        Event::listen('igniter.workingSchedule.timeslotValid', function ($schedule, $timeslot): ?bool {
+            if (!in_array($schedule->getType(), [
+                \Igniter\Local\Models\Location::DELIVERY,
+                \Igniter\Local\Models\Location::COLLECTION,
+            ], true)) {
+                return null;
+            }
+
+            return make_carbon($timeslot)->isToday() ? null : false;
+        });
+
+        // Same-day preorder, constraint 2/2: server-side checkout guard. The
+        // timeslot filter above shapes the UI, but checkOrderTime() itself
+        // (CartManager, FulfillmentModal, CartBox) accepts anything inside the
+        // future_orders day window — a crafted request could still book tomorrow.
+        // Reject at the money moment instead.
+        Event::listen('igniter.orange.validateCheckout', function ($data = null, $order = null): void {
+            if (!\Igniter\Local\Facades\Location::orderDateTime()->isToday()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'order_time' => lang('jamasa.core::default.preorder.same_day_only'),
+                ]);
+            }
+        });
+
         // Auto-accept: the instant an order is paid (admin.order.paymentProcessed),
         // promote it 1 -> 10 ("Angenommen") in auto mode so the printer prints it.
         // In manual mode it stays at 1 for the owner to accept in the app. This is

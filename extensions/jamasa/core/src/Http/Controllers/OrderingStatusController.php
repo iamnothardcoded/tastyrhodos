@@ -42,8 +42,14 @@ class OrderingStatusController
 
             // Same expression the layout/fulfillment banner use. isDisabled()
             // covers only the admin toggle — after-hours needs the schedule check.
+            // Closed splits into preorder (same-day slots still bookable — no
+            // lockout client-side) vs plain closed.
             $orderType = Location::getOrderType();
             if (!$orderType || $orderType->isDisabled() || !$orderType->getSchedule()->isOpen()) {
+                if (\Jamasa\Core\Helpers\Preorder::isAvailable()) {
+                    return response()->json(['state' => 'preorder', 'message' => null]);
+                }
+
                 return response()->json(['state' => 'closed', 'message' => null]);
             }
 
