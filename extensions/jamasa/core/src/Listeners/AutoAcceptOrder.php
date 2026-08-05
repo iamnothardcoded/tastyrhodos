@@ -47,6 +47,22 @@ class AutoAcceptOrder
                 return; // manual mode: leave it in the pool (status 1)
             }
 
+            // PARK same-day preorders (v2, 2026-08-05): an order whose slot is
+            // further away than the release window stays at status 1 so the slip
+            // doesn't print hours early and age in the tray. Release = the
+            // print-server's failsafe sweep, which is order_time-aware since the
+            // same change: it skips future-slot orders until
+            // order_time − release window, then promotes them (5s cadence, no
+            // scheduler needed — and if printing is down, releasing would be
+            // pointless anyway). Parked orders are visible in the OM as
+            // „Vorbestellung"; a failure anywhere leaves them loudly at
+            // status 1, never silently lost.
+            $releaseMinutes = (int) config('jamasa.core.preorder_release_minutes', 60);
+            $orderDateTime = $order->order_date_time;
+            if ($releaseMinutes > 0 && $orderDateTime && now()->addMinutes($releaseMinutes)->lt($orderDateTime)) {
+                return; // parked: promoted by the sweep at release time
+            }
+
             // auto mode: accept now so the printer picks it up. notify=false —
             // the customer's "In Zubereitung" mail fires when the printer moves
             // it 10 -> 3, not here.

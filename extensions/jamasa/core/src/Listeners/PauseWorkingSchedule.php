@@ -32,6 +32,13 @@ final class PauseWorkingSchedule
 {
     public function handle(WorkingScheduleCreatedEvent $event): void
     {
+        // OrderingState's schedule-aware window check builds a RAW schedule to
+        // read the true opening hours — never inject pause exceptions into THAT
+        // build, or the pause reads its own output and latches closed forever.
+        if (OrderingState::$buildingRawSchedule) {
+            return;
+        }
+
         $model = $event->model;
         if (!$model instanceof LocationModel) {
             return;
