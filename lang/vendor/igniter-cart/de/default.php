@@ -399,6 +399,11 @@ $pack = [
 $famedo = [
     'checkout' => [
         'label_terms' => 'Mit Klick auf Bestellen wird Ihre Bestellung kostenpflichtig abgeschickt. Sie stimmen unseren <a target="_blank" href="%s">AGB</a> zu.',
+        // pack gap: used as the validation :attribute for the AGB checkbox —
+        // untranslated it yields "checkout terms and conditions muss
+        // akzeptiert werden" (found 2026-08-05). The full sentence is
+        // overridden in lang/de/validation.php custom.fields.termsAgreed.
+        'text_checkout_terms' => 'AGB',
     ],
     // item-sheet submit: the pack's "Zur Bestellung hinzufügen" is too long
     // next to the price total (user call 2026-07-18)

@@ -152,6 +152,12 @@ return [
             'email' => [
                 'unique' => 'Diese E-Mail-Adresse gehört bereits zu einem Konto. Bitte melde dich an, um sie zu verwenden.',
             ],
+            // AGB checkbox at checkout: without this the message renders as
+            // ":attribute muss akzeptiert werden" with the (now translated)
+            // attribute label — a full sentence reads better (found 2026-08-05).
+            'termsAgreed' => [
+                'accepted' => 'Bitte akzeptiere die AGB, um zu bestellen.',
+            ],
         ],
     ],
 
