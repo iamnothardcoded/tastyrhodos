@@ -360,8 +360,9 @@ class Extension extends BaseExtension
             // (success page/mails) → "WE may contact YOU", never an invitation
             // for the customer to call. Session position is null for API/POS.
             if ($order->isDeliveryType()) {
+                $position = \Igniter\Local\Facades\Location::userPosition();
                 $note = 'ACHTUNG: Adresse nicht automatisch geprüft - wir kontaktieren dich bei Rückfragen';
-                $isRescue = (bool)\Igniter\Local\Facades\Location::userPosition()?->getValue('famedoBlindFallback');
+                $isRescue = (bool)$position?->getValue('famedoBlindFallback');
                 $hasNote = str_contains((string)$order->comment, $note);
                 if ($isRescue && !$hasNote) {
                     $order->comment = trim($note."\n".(string)$order->comment);
@@ -369,6 +370,22 @@ class Extension extends BaseExtension
                 } elseif (!$isRescue && $hasNote) {
                     $order->comment = trim(str_replace($note, '', (string)$order->comment));
                     $orderDirty = true;
+                }
+
+                // address_verified stamp (delivery-slip Maps-QR gate): a VALID
+                // position (has coordinates) ⇒ validateCheckout just geocoded
+                // THIS order's address — rescue ⇒ 0 (QR suppressed on the
+                // slip), else ⇒ 1. ⚠️ userPosition() NEVER returns null — a
+                // positionless session (API/POS orders) yields an empty
+                // default object, so gate on isValid(), which leaves the
+                // tri-state at NULL there (no QR, no warning — fail-safe).
+                // See the 2026-08-05 migration.
+                if ($position?->isValid()) {
+                    $verified = !$isRescue;
+                    if ((bool)$order->address_verified !== $verified || $order->address_verified === null) {
+                        $order->address_verified = $verified;
+                        $orderDirty = true;
+                    }
                 }
             }
 
