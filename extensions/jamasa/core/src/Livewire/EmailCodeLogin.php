@@ -71,6 +71,22 @@ class EmailCodeLogin extends Component
 
     protected const CODE_TTL_SECONDS = 600; // 10 min
 
+    /** ⚠️ PLATFORM OPERATOR — appears in the login-mail footer (legal sender
+     *  identity; a transactional mail must say who operates the system).
+     *  Currently a sole proprietorship: no company yet.
+     *  ⚠️ WHEN THE COMPANY IS FOUNDED, EDIT HERE — and note a UG must always be
+     *  written in full: "Alloup UG (haftungsbeschränkt)", never just "UG". */
+    protected const OPERATOR_NAME = 'Vasileios Peitos';
+
+    protected const OPERATOR_ADDRESS = 'Cottenburgstr. 2, 44575 Castrop-Rauxel';
+
+    /** Accent line in the mail — matches the storefront token --brand. */
+    protected const MAIL_BRAND_COLOR = '#E86A1E';
+
+    /** Replies must land in a READ mailbox. ⚠️ famedo.app has NO MX record, so
+     *  anything @famedo.app bounces; get-famedo.de is the one with mailbox.org. */
+    protected const REPLY_TO = 'hi@get-famedo.de';
+
     protected const MAX_VERIFY_ATTEMPTS = 5;
 
     protected const MAX_SENDS_PER_EMAIL = 3; // per 10-min window
@@ -147,13 +163,30 @@ class EmailCodeLogin extends Component
         // code so it's readable straight from the notification.
         $siteName = (string)(setting('sender_name') ?: setting('site_name'));
         $sent = rescue(function() use ($siteName, $code): bool {
-            Mail::send('jamasa::mail.login-code', [
+            // HTML + text/plain: a code mail without a plain part scores measurably
+            // worse with spam filters (laconchiglia codes hit junk once).
+            Mail::send([
+                'html' => 'jamasa::mail.login-code',
+                'text' => 'jamasa::mail.login-code_text',
+            ], [
                 'code' => $code,
-                'siteName' => $siteName,
+                'restaurant_name' => $siteName,
+                'brand_color' => self::MAIL_BRAND_COLOR,
+                'expiry_minutes' => (int)(self::CODE_TTL_SECONDS / 60),
+                'operator_name' => self::OPERATOR_NAME,
+                'operator_address' => self::OPERATOR_ADDRESS,
             ], function($message) use ($siteName, $code): void {
                 $message->to($this->email)
                     ->subject($code.' ist dein Anmeldecode'.($siteName !== '' ? ' – '.$siteName : ''))
-                    ->from(config('mail.from.address'), $siteName ?: config('mail.from.name'));
+                    ->from(config('mail.from.address'), $siteName ?: config('mail.from.name'))
+                    ->replyTo(self::REPLY_TO);
+
+                $headers = $message->getSymfonyMessage()->getHeaders();
+                // Marks the mail as machine-generated (suppresses auto-replies).
+                $headers->addTextHeader('Auto-Submitted', 'auto-generated');
+                // Unique per mail: without it Gmail threads successive code mails
+                // and collapses the NEWEST code out of sight.
+                $headers->addTextHeader('X-Entity-Ref-ID', (string)Str::uuid());
             });
 
             return true;
