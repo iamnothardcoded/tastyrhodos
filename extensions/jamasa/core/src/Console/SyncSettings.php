@@ -103,7 +103,14 @@ class SyncSettings extends Command
         Currency::where('currency_code', 'GBP')->update(['currency_status' => 0, 'is_default' => 0]);
         Currency::where('currency_code', 'EUR')->update(['is_default' => 1]);
 
-        $this->line('  ✓ language=de (admin=en), currency=EUR (de format)');
+        // Distance unit: TI ships 'mi' (found on elgrecomarl 2026-08-07, while
+        // laconchiglia was already 'km'). It does NOT affect the delivery-area
+        // circle test — the radius stays effectively meters because both sides of
+        // pointInRadius() go through convertToUserUnit(), so the unit cancels —
+        // but it drives every distance the storefront/admin DISPLAYS.
+        setting()->set(['distance_unit' => 'km']);
+
+        $this->line('  ✓ language=de (admin=en), currency=EUR (de format), distance=km');
     }
 
     /** De-brand the email From-name. The install seeds `sender_name` = "TastyIgniter",
