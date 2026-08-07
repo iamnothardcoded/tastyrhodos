@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Jamasa\Core;
 
 use Igniter\Local\Events\WorkingScheduleCreatedEvent;
+use Igniter\Local\Facades\Location;
+use Igniter\Local\Models\Location as LocationModel;
 use Igniter\System\Classes\BaseExtension;
+use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Symfony\Component\Mime\Address;
 use Illuminate\Support\Facades\Route;
 use Jamasa\Core\Console\CreateOwner;
 use Jamasa\Core\Console\SyncSettings;
@@ -201,6 +205,31 @@ class Extension extends BaseExtension
         // "CLOSED" state (browsable menu, checkout gated) instead of disabling
         // order types (redirect loop) or the location (500). See PauseWorkingSchedule.
         Event::listen(WorkingScheduleCreatedEvent::class, [PauseWorkingSchedule::class, 'handle']);
+
+        // Every outgoing mail must have a REPLY PATH. Since 2026-08-07 tenants send
+        // as bestellung@<their own domain>, and those domains have no MX — so a
+        // customer hitting "Antworten" on an order mail (TI sets no Reply-To at all)
+        // bounced. Fill it in, but never override one a mailable set deliberately:
+        // the login-code mail points replies at the PLATFORM, because "the code
+        // doesn't arrive" is our problem, not something the kitchen can fix.
+        Event::listen(MessageSending::class, function(MessageSending $event): void {
+            $message = $event->message;
+            if ($message->getReplyTo() !== []) {
+                return;
+            }
+
+            // ⚠️ location_email is a COLUMN on locations, not a setting — and mail
+            // is sent by the QUEUE WORKER, where Location::current() is null. So the
+            // model fallback is the path that actually runs in production.
+            $address = (string)(optional(Location::current())->location_email
+                ?: optional(LocationModel::query()->orderBy('location_id')->first())->location_email);
+
+            if ($address === '' || !filter_var($address, FILTER_VALIDATE_EMAIL)) {
+                return;                     // no real address known — leave it alone
+            }
+
+            $message->replyTo(new Address($address, (string)setting('site_name')));
+        });
 
         // Same-day preorder, constraint 1/2 (see Helpers\Preorder): future_orders
         // needs days>=1 to bypass core's closed-now gate, which would also offer
