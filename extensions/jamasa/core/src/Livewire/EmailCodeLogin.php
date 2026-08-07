@@ -73,9 +73,12 @@ class EmailCodeLogin extends Component
 
     /** ⚠️ PLATFORM OPERATOR — appears in the login-mail footer (legal sender
      *  identity; a transactional mail must say who operates the system).
-     *  Currently a sole proprietorship: no company yet.
-     *  ⚠️ WHEN THE COMPANY IS FOUNDED, EDIT HERE — and note a UG must always be
-     *  written in full: "Alloup UG (haftungsbeschränkt)", never just "UG". */
+     *  Legal form since 2026-08-07: EINZELUNTERNEHMEN — the operator IS the
+     *  person, so the full personal name + address is the correct and complete
+     *  identity (no Handelsregister, no HRB).
+     *  ⚠️ WHEN A COMPANY IS FOUNDED, EDIT HERE — and a UG must always be written
+     *  in full: "Alloup UG (haftungsbeschränkt)", never just "Alloup UG"
+     *  (§ 5a GmbHG; omitting the suffix can void the liability limit). */
     protected const OPERATOR_NAME = 'Vasileios Peitos';
 
     protected const OPERATOR_ADDRESS = 'Cottenburgstr. 2, 44575 Castrop-Rauxel';
@@ -102,6 +105,26 @@ class EmailCodeLogin extends Component
         return view('jamasa::livewire.email-code-login', [
             'perkTeaser' => $this->perkTeaser(),
         ]);
+    }
+
+    /**
+     * Auth mail goes out as login@<the tenant's own sending domain>, order mail
+     * as whatever MAIL_FROM_ADDRESS says (bestellung@…). Derived, not a second
+     * env var, so a tenant's domain is configured in exactly ONE place — and a
+     * white-label tenant automatically sends auth mail from its own domain
+     * (decision 2026-08-07: own domain where we control it, famedo.app fallback).
+     * MAIL_LOGIN_FROM_ADDRESS overrides if a tenant ever needs something else.
+     */
+    protected function loginFromAddress(): string
+    {
+        if ($override = config('mail.login_from_address')) {
+            return (string)$override;
+        }
+
+        $from = (string)config('mail.from.address');
+        $at = strrpos($from, '@');
+
+        return $at === false ? $from : 'login@'.substr($from, $at + 1);
     }
 
     public function onRequestCode()
@@ -178,7 +201,7 @@ class EmailCodeLogin extends Component
             ], function($message) use ($siteName, $code): void {
                 $message->to($this->email)
                     ->subject($code.' ist dein Anmeldecode'.($siteName !== '' ? ' – '.$siteName : ''))
-                    ->from(config('mail.from.address'), $siteName ?: config('mail.from.name'))
+                    ->from($this->loginFromAddress(), $siteName ?: config('mail.from.name'))
                     ->replyTo(self::REPLY_TO);
 
                 $headers = $message->getSymfonyMessage()->getHeaders();
