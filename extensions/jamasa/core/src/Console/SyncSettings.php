@@ -58,6 +58,7 @@ class SyncSettings extends Command
     {
         $this->syncLanguageAndCurrency();
         $this->syncMailSender();
+        $this->syncOrderMailRouting();
         $this->syncTheme();
         $this->syncPaymentsAndStatuses();
         $this->syncTaxConditions();
@@ -130,6 +131,54 @@ class SyncSettings extends Command
             }
         }
         $this->line("  · mail sender_name kept ('{$current}')");
+    }
+
+    /**
+     * Order-mail routing. Two separate defects were live on the whole fleet until
+     * 2026-08-07 and neither was visible without reading the DB:
+     *
+     * 1. `order_email` shipped as [customer, ADMIN], and TI resolves the admin
+     *    recipient to `site_email` — a PLATFORM setting. In a white-label product
+     *    the copy belongs to the RESTAURANT, so we converge to [customer, LOCATION]
+     *    (`location_email`, per-location, also correct for multi-location tenants).
+     * 2. `site_email` / `sender_email` / `location_email` all ship as the install
+     *    placeholder `admin@domain.tld` — a domain that does not exist. So every
+     *    single order fired a mail into a hard bounce: the owner got no copy, and
+     *    the bounces quietly eroded our sending reputation.
+     *
+     * The routing is a platform convention → converged here. The ADDRESS is
+     * per-tenant owner data → cannot be invented, so we WARN instead of guessing.
+     */
+    protected function syncOrderMailRouting(): void
+    {
+        $recipients = (array) setting('order_email', []);
+        if (in_array('admin', $recipients, true) || !in_array('location', $recipients, true)) {
+            setting()->set(['order_email' => ['customer', 'location']]);
+            $this->line('  ✓ order_email → [customer, location] (was ['.implode(', ', $recipients).'])');
+        } else {
+            $this->line('  · order_email kept (['.implode(', ', $recipients).'])');
+        }
+
+        $placeholder = 'admin@domain.tld';
+        $location = Location::first();
+        $bad = [];
+        foreach ([
+            'location_email' => $location?->location_email,
+            'site_email' => setting('site_email'),
+            'sender_email' => setting('sender_email'),
+        ] as $key => $value) {
+            if ($value === null || $value === '' || $value === $placeholder) {
+                $bad[] = $key;
+            }
+        }
+
+        if ($bad !== []) {
+            $this->warn('  ⚠ '.implode(', ', $bad).' still unset/placeholder ('.$placeholder.')');
+            $this->warn('    → order alerts BOUNCE and the owner gets no copy.');
+            $this->warn("    → set the restaurant's real address (onboarding data, runbook §1.11a).");
+        } else {
+            $this->line('  ✓ order-alert addresses are real (no '.$placeholder.' left)');
+        }
     }
 
     /** Ensure famedo theme record exists + carries the famedo GDPR texts. */
