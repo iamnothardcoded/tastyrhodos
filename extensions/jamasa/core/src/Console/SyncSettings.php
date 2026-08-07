@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jamasa\Core\Console;
 
+use Igniter\Admin\Models\Status;
 use Igniter\Local\Models\Location;
 use Igniter\Local\Models\LocationSettings;
 use Igniter\Local\Models\ReviewSettings;
@@ -179,6 +180,37 @@ class SyncSettings extends Command
         } else {
             $this->line('  ✓ order-alert addresses are real (no '.$placeholder.' left)');
         }
+
+        $this->syncOrderStatusNotifications();
+    }
+
+    /**
+     * Silence the status mails the customer does not need. Measured on a real
+     * order (elgrecomarl #22): placing it produced FIVE mails for a logged-in
+     * customer — confirmation to customer + restaurant, then "Eingegangen"
+     * (status 1) and "In Zubereitung" (status 3) seconds later, plus the login
+     * code. The two status mails arrive while the confirmation is still
+     * unread — three mails in ten seconds reads as spam, trains people to
+     * ignore our mail (which costs real deliverability) and burns the ESP quota
+     * that gates LOGIN, because the daily cap is per ACCOUNT across all tenants.
+     *
+     * Dropping them takes a guest order from 4 mails to 2 and a logged-in one
+     * from 5 to 3. The states that are worth a mail are the ones the customer
+     * cannot already see: "In Lieferung" and "Storniert" — deliberately left to
+     * the tenant, not forced here.
+     */
+    protected function syncOrderStatusNotifications(): void
+    {
+        $noisy = [1, 3];   // Eingegangen, In Zubereitung
+        $changed = Status::query()
+            ->where('status_for', 'order')
+            ->whereIn('status_id', $noisy)
+            ->where('notify_customer', 1)
+            ->update(['notify_customer' => 0]);
+
+        $this->line($changed > 0
+            ? "  ✓ order-status mails: silenced {$changed} redundant notification(s) (status 1/3)"
+            : '  · order-status mails already quiet (status 1/3)');
     }
 
     /** Ensure famedo theme record exists + carries the famedo GDPR texts. */
