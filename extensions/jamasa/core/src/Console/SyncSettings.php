@@ -139,9 +139,12 @@ class SyncSettings extends Command
      * 2026-08-07 and neither was visible without reading the DB:
      *
      * 1. `order_email` shipped as [customer, ADMIN], and TI resolves the admin
-     *    recipient to `site_email` — a PLATFORM setting. In a white-label product
-     *    the copy belongs to the RESTAURANT, so we converge to [customer, LOCATION]
-     *    (`location_email`, per-location, also correct for multi-location tenants).
+     *    recipient to `site_email` — a PLATFORM setting, and it shipped as a
+     *    placeholder, so the copy bounced. Target state since 2026-08-07 is
+     *    **[customer] only**: the PRINTER is the restaurant's order channel, and a
+     *    mail per order is noise plus shared ESP quota (which gates login). The one
+     *    thing a printed slip cannot carry is a CANCELLATION — that is mailed to the
+     *    location by NotifyLocationOnCancel, independently of this setting.
      * 2. `site_email` / `sender_email` / `location_email` all ship as the install
      *    placeholder `admin@domain.tld` — a domain that does not exist. So every
      *    single order fired a mail into a hard bounce: the owner got no copy, and
@@ -153,11 +156,11 @@ class SyncSettings extends Command
     protected function syncOrderMailRouting(): void
     {
         $recipients = (array) setting('order_email', []);
-        if (in_array('admin', $recipients, true) || !in_array('location', $recipients, true)) {
-            setting()->set(['order_email' => ['customer', 'location']]);
-            $this->line('  ✓ order_email → [customer, location] (was ['.implode(', ', $recipients).'])');
+        if ($recipients !== ['customer']) {
+            setting()->set(['order_email' => ['customer']]);
+            $this->line('  ✓ order_email → [customer] (was ['.implode(', ', $recipients).'])');
         } else {
-            $this->line('  · order_email kept (['.implode(', ', $recipients).'])');
+            $this->line('  · order_email kept ([customer])');
         }
 
         $placeholder = 'admin@domain.tld';

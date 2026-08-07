@@ -1,4 +1,4 @@
-{{ $restaurant_name }}
+{!! $restaurant_name !!}
 
 Dein Anmeldecode
 
@@ -13,9 +13,9 @@ Code passiert nichts. Wir fragen dich nie nach diesem Code - weder am Telefon
 noch per Nachricht.
 
 --
-Diese E-Mail wurde automatisch versendet, weil bei {{ $restaurant_name }} eine
+Diese E-Mail wurde automatisch versendet, weil bei {!! $restaurant_name !!} eine
 Anmeldung mit dieser Adresse angefordert wurde.
 
-Bestellsystem betrieben von {{ $operator_name ?? 'Polykatastima GmbH' }},
-{{ $operator_address ?? '[Strasse, PLZ Ort]' }}.
+Bestellsystem betrieben von {!! $operator_name ?? "" !!},
+{!! $operator_address ?? "" !!}.
 Fragen? Antworte einfach auf diese E-Mail.
