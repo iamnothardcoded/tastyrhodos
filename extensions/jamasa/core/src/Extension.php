@@ -17,7 +17,6 @@ use Jamasa\Core\Console\CreateOwner;
 use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
 use Jamasa\Core\Listeners\AutoAcceptOrder;
-use Jamasa\Core\Listeners\NotifyLocationOnCancel;
 use Jamasa\Core\Listeners\PauseWorkingSchedule;
 use Jamasa\Core\Livewire\AccountSettings;
 use Jamasa\Core\Livewire\EmailCodeLogin;
@@ -269,12 +268,6 @@ class Extension extends BaseExtension
         // In manual mode it stays at 1 for the owner to accept in the app. This is
         // the ONE home of "acceptance" — the printer stays dumb. See AutoAcceptOrder.
         Event::listen('admin.order.paymentProcessed', [AutoAcceptOrder::class, 'handle']);
-
-        // The location no longer gets a mail per order (printer is the order
-        // channel; a copy of every order is noise + shared ESP quota). But a
-        // CANCELLATION cannot reach the kitchen any other way — the slip is
-        // already printed and now wrong. See NotifyLocationOnCancel.
-        Event::listen('igniter.cart.orderStatusAdded', [NotifyLocationOnCancel::class, 'handle']);
 
         // Mollie hosted-checkout / bank-statement / report line: the pickup code
         // IS the customer-facing order reference — for BOTH order types. It

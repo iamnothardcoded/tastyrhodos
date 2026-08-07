@@ -198,22 +198,35 @@ class SyncSettings extends Command
      * that gates LOGIN, because the daily cap is per ACCOUNT across all tenants.
      *
      * Dropping them takes a guest order from 4 mails to 2 and a logged-in one
-     * from 5 to 3. The states that are worth a mail are the ones the customer
-     * cannot already see: "In Lieferung" and "Storniert" — deliberately left to
-     * the tenant, not forced here.
+     * from 5 to 3. The inverse holds for a CANCELLATION — the one state the
+     * customer cannot discover on their own — so that one is forced ON.
+     * "In Lieferung" stays a per-tenant choice (only meaningful once a tenant
+     * actually runs its own drivers).
      */
     protected function syncOrderStatusNotifications(): void
     {
-        $noisy = [1, 3];   // Eingegangen, In Zubereitung
-        $changed = Status::query()
+        $silenced = Status::query()
             ->where('status_for', 'order')
-            ->whereIn('status_id', $noisy)
+            ->whereIn('status_id', [1, 3])          // Eingegangen, In Zubereitung
             ->where('notify_customer', 1)
             ->update(['notify_customer' => 0]);
 
-        $this->line($changed > 0
-            ? "  ✓ order-status mails: silenced {$changed} redundant notification(s) (status 1/3)"
+        // A CANCELLATION is the opposite case: the customer has no other way to
+        // learn their order is off — no slip, no push, and they may already be
+        // on their way to collect it. Always notify.
+        $cancelled = (int) setting('canceled_order_status', 9);
+        $enabled = Status::query()
+            ->where('status_for', 'order')
+            ->where('status_id', $cancelled)
+            ->where('notify_customer', 0)
+            ->update(['notify_customer' => 1]);
+
+        $this->line($silenced > 0
+            ? "  ✓ order-status mails: silenced {$silenced} redundant notification(s) (status 1/3)"
             : '  · order-status mails already quiet (status 1/3)');
+        $this->line($enabled > 0
+            ? "  ✓ cancellation now notifies the customer (status {$cancelled})"
+            : "  · cancellation already notifies the customer (status {$cancelled})");
     }
 
     /** Ensure famedo theme record exists + carries the famedo GDPR texts. */
