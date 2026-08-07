@@ -266,10 +266,20 @@ class SyncSettings extends Command
     protected function syncPaymentsAndStatuses(): void
     {
         Payment::syncAll();
-        $p = DB::table('payments');
-        $p->where('code', 'cod')->update(['name' => 'Barzahlung', 'description' => 'Bezahle bar bei Abholung oder bei Lieferung deiner Bestellung']);
-        $p->where('code', 'paypalexpress')->update(['name' => 'PayPal', 'description' => 'Bezahle bequem mit deinem PayPal-Konto']);
-        $p->where('code', 'mollie')->update(['name' => 'Online bezahlen', 'description' => 'Sicher bezahlen mit Karte, Apple Pay und mehr']);
+        // ⚠️ A FRESH builder per row. `DB::table()` returns a MUTABLE builder:
+        // reusing one made the second call `WHERE code='cod' AND code='paypalexpress'`,
+        // which matches nothing — so from the day this was written only the FIRST
+        // label ever converged. Every tenant silently kept TI's English
+        // "PayPal Express" / "Mollie Payment" at checkout while the command
+        // cheerfully reported "✓ payment labels (German)". Found 2026-08-08.
+        $labels = [
+            'cod' => ['Barzahlung', 'Bezahle bar bei Abholung oder bei Lieferung deiner Bestellung'],
+            'paypalexpress' => ['PayPal', 'Bezahle bequem mit deinem PayPal-Konto'],
+            'mollie' => ['Online bezahlen', 'Sicher bezahlen mit Karte, Apple Pay und mehr'],
+        ];
+        foreach ($labels as $code => [$name, $description]) {
+            DB::table('payments')->where('code', $code)->update(['name' => $name, 'description' => $description]);
+        }
 
         $statuses = [
             1 => 'Eingegangen', 2 => 'Ausstehend', 3 => 'In Zubereitung', 4 => 'In Lieferung',
