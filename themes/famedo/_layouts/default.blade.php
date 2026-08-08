@@ -28,9 +28,21 @@ description: Default layout
     @include('igniter-orange::includes.head')
     @livewireStyles
 </head>
+{{-- famedo-identity-complete: does the ACCOUNT itself carry a usable checkout
+     identity? Consumed by the guest-cache hygiene in famedo.js, which must only
+     delete the customer's typed values once the account can REPLACE them — a
+     passwordless account holds an e-mail and nothing else, and wiping its cache
+     mid-checkout blanks the form with no way to recover (fix 2026-08-09).
+     ⚠️ Keep this condition IDENTICAL to $identityLocked in
+     includes/checkout/tab-fields.blade.php — they must never disagree. --}}
+@php($famedoIdentityCustomer = \Igniter\User\Facades\Auth::customer())
+@php($famedoIdentityComplete = $famedoIdentityCustomer
+    && filled($famedoIdentityCustomer->first_name)
+    && filled($famedoIdentityCustomer->last_name)
+    && filled($famedoIdentityCustomer->email))
 {{-- No h-100/d-flex on body: they clamp .app (flex child) to viewport height,
      cutting the white background off after one screen. .app sizes itself. --}}
-<body class="famedo page-{{ str_slug(str_replace('/', '-', $this->page->getBaseFileName() ?? 'unknown')) }} {{ $this->page->bodyClass }}{{ $famedoOrderingState !== 'open' ? ' ordering-'.$famedoOrderingState : '' }}{{ \Igniter\User\Facades\Auth::isLogged() ? ' famedo-authed' : '' }}">
+<body class="famedo page-{{ str_slug(str_replace('/', '-', $this->page->getBaseFileName() ?? 'unknown')) }} {{ $this->page->bodyClass }}{{ $famedoOrderingState !== 'open' ? ' ordering-'.$famedoOrderingState : '' }}{{ \Igniter\User\Facades\Auth::isLogged() ? ' famedo-authed' : '' }}{{ $famedoIdentityComplete ? ' famedo-identity-complete' : '' }}">
 
 <div class="app">
     <header class="header">

@@ -205,8 +205,20 @@
         if (el) el.value = value;
     }
 
+    function readStored() {
+        const raw = store('s', 'get', STORAGE_KEY);
+        if (!raw) return {};
+        try { return JSON.parse(raw) || {}; } catch (e) { return {}; }
+    }
+
+    /* MERGE, never replace. A Livewire morph re-renders these inputs from SERVER
+       state, which is EMPTY for a passwordless account (the profile has only an
+       e-mail) — the next blur then saved that blank set over the good one and the
+       customer could not recover by retyping. Losing what the customer typed is
+       far worse than keeping one stale value, so an empty input never deletes a
+       stored one. Reproduced 2026-08-09; it cost a live client demo. */
     function saveFields() {
-        const data = {};
+        const data = readStored();
         FIELDS.forEach(name => {
             const input = document.querySelector('[data-checkout-control="' + name + '"]');
             if (input && input.value) {
@@ -215,8 +227,6 @@
         });
         if (Object.keys(data).length > 0) {
             store('s', 'set', STORAGE_KEY, JSON.stringify(data));
-        } else {
-            store('s', 'del', STORAGE_KEY); // emptied → clear
         }
         if (IDENTITY_LOCKED) {
             saveSessionField('telephone', PHONE_SESSION_KEY);
@@ -226,20 +236,14 @@
     }
 
     function restoreFields() {
-        const saved = store('s', 'get', STORAGE_KEY);
-        if (!saved) return;
-
-        let data;
-        try {
-            data = JSON.parse(saved);
-        } catch(e) {
-            return;
-        }
-
+        const data = readStored();
         FIELDS.forEach(name => {
-            if (data[name]) {
-                setField(name, data[name]);
-            }
+            if (!data[name]) return;
+            const el = document.querySelector('[data-checkout-control="' + name + '"]');
+            /* Only ever FILL a blank input — never overwrite what the customer is
+               currently typing (this now runs after every Livewire commit). */
+            if (el && el.value) return;
+            setField(name, data[name]);
         });
     }
 
@@ -282,5 +286,28 @@
     // Restore on load
     restoreFields();
     restoreSessionFields();
+
+    /* ⚠️ AND after every Livewire commit. Returning from the fulfillment
+       (address) modal re-renders this form from server state; for a passwordless
+       account first_name/last_name/telephone come back EMPTY while the customer
+       sees their own text vanish, and the submit then fails with "muss ausgefüllt
+       werden" on visibly filled boxes. E-mail was the tell: it is the one value
+       the account record carries, so it alone survived. Same hook pattern the
+       notes sync uses in famedo.js. */
+    function famedoRestoreAfterCommit() {
+        restoreFields();
+        restoreSessionFields();
+    }
+    document.addEventListener('livewire:navigated', famedoRestoreAfterCommit);
+    function attachRestoreHook() {
+        if (!window.Livewire || typeof Livewire.hook !== 'function') return false;
+        Livewire.hook('commit', function (opts) {
+            (opts && typeof opts.succeed === 'function')
+                ? opts.succeed(famedoRestoreAfterCommit)
+                : famedoRestoreAfterCommit();
+        });
+        return true;
+    }
+    if (!attachRestoreHook()) document.addEventListener('livewire:init', attachRestoreHook);
 </script>
 @endscript

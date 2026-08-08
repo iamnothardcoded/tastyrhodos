@@ -517,6 +517,36 @@
             }
         }
     });
+    /* ⚠️ CHECKOUT SUBMIT FLUSH (2026-08-09) — the two-tap bug that cost a live
+       client demo. The identity inputs bind with wire:model.blur, so a value
+       only reaches the server when the field loses focus. Tapping „Bestellen"
+       causes the blur AND the submit; the submit can be processed before the
+       field update lands, so the server validates EMPTY values and answers
+       "Vorname muss ausgefüllt werden" over a visibly filled box. The customer
+       then taps again — the first tap effectively committed the typing — and it
+       goes through. From the outside it reads as "the button ignores me once".
+       Fix: on submit, copy every checkout control's CURRENT DOM value into the
+       component with a DEFERRED set, so it rides the very same request. Same
+       technique as the fulfillment guard below. Never overrides a field the
+       customer did not fill (empty stays empty → real validation still fires). */
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.querySelector || !window.Livewire) return;
+        if (form.closest('#fulfillmentModal')) return;            // handled below
+        var btn = form.querySelector('[data-checkout-control="submit"]');
+        if (!btn) return;                                          // not the checkout form
+        var root = form.closest('[wire\\:id]');
+        var comp = root ? Livewire.find(root.getAttribute('wire:id')) : null;
+        if (!comp) return;
+        form.querySelectorAll('[data-checkout-control]').forEach(function (el) {
+            var name = el.getAttribute('data-checkout-control');
+            if (!name || name === 'submit') return;
+            if (el.type === 'checkbox' || el.type === 'radio') return;   // bound separately
+            if (typeof el.value !== 'string' || el.value === '') return;
+            comp.set('fields.' + name, el.value, false);           // deferred: same request
+        });
+    }, true);
+
     /* Confirm cost guard: the vendor's onConfirm geocodes the address (a LIVE
        Nominatim call, 1–3+s) whenever the picker flag is open — even when only
        the time changed. If the address text is untouched since the modal
@@ -730,11 +760,30 @@ window.fmSelectNearestSlot = function (prevTime) {
    device, the previous customer's identity at worst. Clearing it while
    authed also means nothing leaks to the NEXT guest after logout. */
 (function () {
+    /* ⚠️ ONLY when the account can actually REPLACE what it deletes
+       (fix 2026-08-09 — this cost a live client demo).
+       The premise "logged in ⇒ the account is the source of truth" is false for a
+       PASSWORDLESS account: it is created from an e-mail alone, so first_name /
+       last_name / telephone are empty. This cleanup then ran on the next page
+       load (e.g. returning from the address modal), deleted the only copy of what
+       the customer had just typed, and the re-rendered form came back blank —
+       e-mail alone survived, because e-mail IS on the account. The customer could
+       not recover by retyping, because every reload wiped it again.
+       famedo-identity-complete is set by the layout only when the account really
+       carries name + surname, i.e. exactly when the cached guest values are
+       redundant. The privacy intent is unchanged: an account WITH its own identity
+       still drops the guest cache, so nothing leaks to the next guest. */
     if (document.body.classList.contains('famedo-authed')) {
-        // sessionStorage = current home (session-only since 2026-07-28);
-        // localStorage = legacy cleanup for anyone still carrying a July-9 entry.
-        try { sessionStorage.removeItem('checkout_fields'); } catch (e) { /* storage blocked */ }
+        /* localStorage = legacy cleanup for anyone still carrying a July-9 entry.
+           Nothing writes there since 2026-07-28, so this can never destroy live
+           data — keep it unconditional, it is pure hygiene. */
         try { localStorage.removeItem('checkout_fields'); } catch (e) { /* storage blocked */ }
+
+        /* sessionStorage = the LIVE copy. Drop it only once the account can
+           actually replace it (same condition as $identityLocked). */
+        if (document.body.classList.contains('famedo-identity-complete')) {
+            try { sessionStorage.removeItem('checkout_fields'); } catch (e) { /* storage blocked */ }
+        }
     }
 })();
 
