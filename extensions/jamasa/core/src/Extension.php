@@ -9,11 +9,15 @@ use Igniter\Local\Facades\Location;
 use Igniter\Local\Models\Location as LocationModel;
 use Igniter\System\Classes\BaseExtension;
 use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mime\Address;
 use Illuminate\Support\Facades\Route;
 use Jamasa\Core\Console\CreateOwner;
+use Jamasa\Core\Console\MailReport;
 use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
 use Jamasa\Core\Listeners\AutoAcceptOrder;
@@ -67,6 +71,11 @@ class Extension extends BaseExtension
         // famedo:create-owner — provision a locked-down owner-console account
         // per tenant (their e-mail = login username). See CreateOwner.
         $this->registerConsoleCommand('famedo.create-owner', CreateOwner::class);
+
+        // famedo:mail-report — "is our mail actually arriving?", the question
+        // nobody could answer during the 2026-08 sender outage. Exits non-zero on
+        // alarm so a dead-man's-switch can hang off it. See MailReport.
+        $this->registerConsoleCommand('famedo.mail-report', MailReport::class);
     }
 
     #[Override]
@@ -229,6 +238,52 @@ class Extension extends BaseExtension
             }
 
             $message->replyTo(new Address($address, (string)setting('site_name')));
+        });
+
+        // MAIL DELIVERY VISIBILITY — record what we handed to the ESP.
+        //
+        // ⚠️ This exists because "the queue drained and failed_jobs is 0" is NOT
+        // evidence that a mail arrived: Brevo answers 250 OK at SMTP and rejects
+        // internally afterwards. From 2026-08-02 to 2026-08-09 every customer
+        // order-confirmation was rejected that way and NOTHING here knew.
+        //
+        // MessageSent (not MessageSending) on purpose: the Message-ID is minted by
+        // the transport at send time, and it is the ONLY join key Brevo echoes back
+        // in its webhook payload — the payload carries no sender at all.
+        // Failure telemetry then arrives via MailEventsController.
+        //
+        // ⚠️ Wrapped whole in catch(Throwable): telemetry must never be able to
+        // break an actual send. A lost row is an inconvenience; a mail that did not
+        // go out because bookkeeping threw is an outage.
+        Event::listen(MessageSent::class, function(MessageSent $event): void {
+            try {
+                $messageId = trim((string)$event->sent->getMessageId(), " \t\n\r\0\x0B<>");
+                if ($messageId === '') {
+                    return;
+                }
+
+                $email = $event->message;
+                $to = $email->getTo()[0] ?? null;
+                $recipient = $to ? mb_strtolower(trim($to->getAddress())) : '';
+                $from = $email->getFrom()[0] ?? null;
+
+                DB::table('mail_messages')->insertOrIgnore([
+                    // Template code when we know it (set by the mailable), else the
+                    // subject is a good-enough discriminator for an alarm.
+                    'mail_type' => mb_substr((string)($event->data['__famedo_mail_type'] ?? $email->getSubject() ?? ''), 0, 64),
+                    'message_id' => $messageId,
+                    'from_address' => $from ? mb_substr($from->getAddress(), 0, 191) : null,
+                    // ⚠️ DSGVO: hash, never the address itself — it already lives
+                    // lawfully in orders/customers. Domain kept because provider-
+                    // shaped failures (gmx/web.de) are the operational signal.
+                    'recipient_hash' => hash('sha256', $recipient),
+                    'recipient_domain' => mb_substr((string)mb_strrchr($recipient, '@'), 1, 128) ?: null,
+                    'status' => null,
+                    'sent_at' => now(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('famedo mail-log: could not record outgoing mail: '.$e->getMessage());
+            }
         });
 
         // Same-day preorder, constraint 1/2 (see Helpers\Preorder): future_orders
@@ -571,6 +626,19 @@ class Extension extends BaseExtension
         // ran as a wire:click. A POST→redirect reloads the page with a fresh token.
         Route::middleware(['web', 'throttle:10,1'])
             ->post('jamasa/signup-from-order', \Jamasa\Core\Http\Controllers\SignupFromOrderController::class);
+
+        // Brevo transactional-webhook sink (delivery/bounce/rejection telemetry).
+        //
+        // ⚠️ Registered under `api`, NOT `web`, deliberately: the api group has no
+        // CSRF and no session, so an unauthenticated third-party POST needs no
+        // VerifyCsrfToken::except() hack. Auth is a bearer token checked IN the
+        // controller (Brevo does not sign webhooks — there is no HMAC to verify).
+        //
+        // ⚠️ NO throttle. Brevo discards an event permanently on any 4xx except
+        // 429, so a throttle would silently destroy telemetry during exactly the
+        // failure storm we most need to see.
+        Route::middleware(['api'])
+            ->post('api/jamasa/mail-events', \Jamasa\Core\Http\Controllers\MailEventsController::class);
 
         // Confine owner-scoped tokens to api/jamasa/* on EVERY /api/* request.
         // TI's stock API authorizes admin resources by tokenable TYPE and ignores
