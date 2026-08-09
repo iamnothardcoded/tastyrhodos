@@ -65,7 +65,15 @@ class MailEventsController
             return response()->json(['message' => 'not configured'], 503);
         }
 
-        if (!hash_equals($expected, (string) $request->bearerToken())) {
+        // ⚠️ Accept the token from the QUERY STRING as well as the Authorization
+        // header. Brevo's dashboard webhook form offers only a URL and event
+        // checkboxes — there is no header field — so a header-only check would be
+        // unusable without creating every webhook through the API. Brevo's own
+        // documented options are credentials-in-the-URL or an IP allowlist, so
+        // this is the sanctioned shape; treat the URL itself as a secret.
+        $presented = (string) ($request->bearerToken() ?: $request->query('token', ''));
+
+        if (!hash_equals($expected, $presented)) {
             // ⚠️ Logged loudly: a wrong token means Brevo is DISCARDING our events
             // (4xx = no retry), which looks exactly like "no bad news".
             Log::warning('famedo mail-events: rejected webhook with bad/missing token');
