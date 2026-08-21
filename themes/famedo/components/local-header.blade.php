@@ -17,7 +17,14 @@
 </div>
 <div class="hero__card">
     @if(isset($theme) && $theme->logo_image)
-        <div class="hero__logo"><img src="{{ media_url($theme->logo_image) }}" alt="{{ $locationInfo->name }}"></div>
+        {{-- Same two fixes as the topbar logo (see includes/header.blade.php):
+             inline style so it can't flash at the upload's natural size before
+             famedo.css lands, and a thumb instead of the raw original.
+             Keep in sync with famedo.css:188 (max-height:30px; max-width:116px). --}}
+        <div class="hero__logo"><img
+            style="max-height:30px;max-width:116px"
+            src="{{ media_thumb($theme->logo_image, ['width' => 240, 'height' => 60]) }}"
+            alt="{{ $locationInfo->name }}"></div>
     @endif
     <h1 class="hero__name">{{ $locationInfo->name }}</h1>
     @if(strlen(strip_tags((string) $locationInfo->description)))
