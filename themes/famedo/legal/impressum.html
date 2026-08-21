@@ -16,28 +16,32 @@
 <p class="sub">Anbieter dieser Bestellseite und Ihr Vertragspartner bei Bestellungen</p>
 
 <h2>Angaben gemäß § 5 DDG</h2>
-<p><span class="todo">[Name des Restaurants / Firma inkl. Rechtsform, z. B. „Rhodos Grill“ oder „Rhodos Grill GmbH“]</span><br>
-<span class="todo">[Straße Hausnummer]</span><br>
-<span class="todo">[PLZ Ort]</span></p>
+<p><span class="todo" data-field="company">[Name des Restaurants / Firma inkl. Rechtsform, z. B. „Rhodos Grill“ oder „Rhodos Grill GmbH“]</span><br>
+<span class="todo" data-field="street">[Straße Hausnummer]</span><br>
+<span class="todo" data-field="city">[PLZ Ort]</span></p>
 
 <h2>Vertreten durch</h2>
-<p><span class="todo">[Inhaber/in bzw. Geschäftsführer/in: Vor- und Nachname]</span></p>
+<p><span class="todo" data-field="representative">[Inhaber/in bzw. Geschäftsführer/in: Vor- und Nachname]</span></p>
 
 <h2>Kontakt</h2>
-<p>Telefon: <span class="todo">[Telefonnummer]</span><br>
-E-Mail: <span class="todo">[E-Mail-Adresse]</span></p>
+<p>Telefon: <span class="todo" data-field="phone">[Telefonnummer]</span><br>
+E-Mail: <span class="todo" data-field="email">[E-Mail-Adresse]</span></p>
 
+<div data-optional="register">
 <h2>Registereintrag</h2>
-<p><span class="todo">[Nur bei GmbH/UG/eingetragenen Firmen – sonst Abschnitt streichen:]</span><br>
+<p>
 Eintragung im Handelsregister.<br>
-Registergericht: Amtsgericht <span class="todo">[Ort]</span><br>
-Registernummer: HRB <span class="todo">[Nummer]</span></p>
+Registergericht: Amtsgericht <span class="todo" data-field="register_court">[Ort]</span><br>
+Registernummer: HRB <span class="todo" data-field="register_number">[Nummer]</span></p>
+</div>
 
+<div data-optional="vat_id">
 <h2>Umsatzsteuer-ID</h2>
-<p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: <span class="todo">[DE… – falls nicht vorhanden, Abschnitt streichen]</span></p>
+<p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: <span class="todo" data-field="vat_id">[DE…]</span></p>
+</div>
 
 <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
-<p><span class="todo">[Vor- und Nachname, Anschrift wie oben]</span></p>
+<p><span class="todo" data-field="content_responsible">[Vor- und Nachname, Anschrift wie oben]</span></p>
 
 <h2>Verbraucherstreitbeilegung</h2>
 <p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
@@ -45,4 +49,4 @@ Registernummer: HRB <span class="todo">[Nummer]</span></p>
 <h2>Technischer Betreiber der Bestellseite</h2>
 <p>Diese Bestellseite wird technisch über das Bestellsystem „famedo“ der Polykatastima GmbH, Cottenburgstraße 2, 44575 Castrop-Rauxel, bereitgestellt. Ihr Vertragspartner für alle Bestellungen ist ausschließlich der oben genannte Gastronomiebetrieb. Informationen zur Datenverarbeitung finden Sie in der <a href="/datenschutz">Datenschutzerklärung</a>.</p>
 
-<p class="stand">Stand: <span class="todo">[Monat Jahr]</span></p>
+<p class="stand">Stand: <span class="todo" data-field="stand">[Monat Jahr]</span></p>

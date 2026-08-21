@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mime\Address;
 use Illuminate\Support\Facades\Route;
 use Jamasa\Core\Console\CreateOwner;
+use Jamasa\Core\Console\LegalFill;
 use Jamasa\Core\Console\MailReport;
 use Jamasa\Core\Console\SyncSettings;
 use Jamasa\Core\Helpers\PickupCode;
@@ -67,6 +68,9 @@ class Extension extends BaseExtension
         // famedo:sync-settings — idempotent per-tenant DB-settings convergence
         // (replaces the manual post-image-bump one-liners; see SyncSettings).
         $this->registerConsoleCommand('famedo.sync-settings', SyncSettings::class);
+        // Impressum/Datenschutz from owner data — see LegalFill's header for
+        // why tenant legal data must never come from a scraped platform.
+        $this->registerConsoleCommand('famedo.legal-fill', LegalFill::class);
 
         // famedo:create-owner — provision a locked-down owner-console account
         // per tenant (their e-mail = login username). See CreateOwner.

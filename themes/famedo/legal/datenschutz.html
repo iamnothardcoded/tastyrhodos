@@ -15,15 +15,15 @@
   hostet alle Schriften SELBST (DSGVO-Entscheidung, famedo.css @font-face auf
   /vendor/famedo/fonts/). Abschnitt 10 hier auf „lokal gehostet“ korrigiert.
 -->
-<p class="sub">für die Online-Bestellseite von <span class="todo">[Name des Restaurants]</span></p>
+<p class="sub">für die Online-Bestellseite von <span class="todo" data-field="restaurant_name">[Name des Restaurants]</span></p>
 
 <h2>1. Verantwortlicher</h2>
 <p>Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) für die Verarbeitung personenbezogener Daten auf dieser Bestellseite ist:</p>
-<p><span class="todo">[Name des Restaurants / Rechtsform, z. B. „Rhodos Grill, Inhaber Max Mustermann“]</span><br>
-<span class="todo">[Straße Hausnummer]</span><br>
-<span class="todo">[PLZ Ort]</span><br>
-Telefon: <span class="todo">[Telefonnummer]</span><br>
-E-Mail: <span class="todo">[E-Mail-Adresse]</span></p>
+<p><span class="todo" data-field="controller">[Name des Restaurants / Rechtsform, z. B. „Rhodos Grill, Inhaber Max Mustermann“]</span><br>
+<span class="todo" data-field="street">[Straße Hausnummer]</span><br>
+<span class="todo" data-field="city">[PLZ Ort]</span><br>
+Telefon: <span class="todo" data-field="phone">[Telefonnummer]</span><br>
+E-Mail: <span class="todo" data-field="email">[E-Mail-Adresse]</span></p>
 <p>Bei Fragen zum Datenschutz erreichen Sie uns über die genannten Kontaktdaten.</p>
 
 <h2>2. Technischer Betreiber der Bestellseite (Auftragsverarbeiter)</h2>
@@ -48,8 +48,8 @@ E-Mail: <span class="todo">[E-Mail-Adresse]</span></p>
 <p>Zur Abwicklung Ihrer Bestellung senden wir Ihnen transaktionsbezogene Nachrichten (z. B. Bestellbestätigung, ggf. Informationen zum Bestell- oder Lieferstatus) an die von Ihnen angegebene E-Mail-Adresse bzw. Telefonnummer. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Werbliche Nachrichten erhalten Sie von uns nur, wenn Sie hierin gesondert eingewilligt haben (Art. 6 Abs. 1 lit. a DSGVO); eine solche Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen.</p>
 
 <h2>6. Zahlungsabwicklung</h2>
-<p>Für Online-Zahlungen stehen Ihnen je nach Konfiguration verschiedene Zahlungsarten zur Verfügung (z. B. <span class="todo">[Kartenzahlung, PayPal, Apple Pay/Google Pay – Liste an die tatsächlich aktivierten Zahlarten anpassen]</span>); alternativ ist Barzahlung bei Lieferung oder Abholung möglich.</p>
-<p>Bei Online-Zahlung werden Ihre Zahlungsdaten direkt vom jeweiligen Zahlungsdienstleister erhoben und verarbeitet; wir selbst erhalten keine vollständigen Zahlungsdaten (z. B. keine vollständigen Kartennummern), sondern lediglich eine Bestätigung über den Zahlungseingang. Die Zahlungsabwicklung erfolgt über <span class="todo">[Zahlungsdienstleister eintragen, z. B. „Mollie B.V., Keizersgracht 126, 1015 CW Amsterdam, Niederlande“]</span> sowie ggf. den von Ihnen gewählten Anbieter (z. B. PayPal (Europe) S.à r.l. et Cie, S.C.A., Luxemburg).</p>
+<p>Für Online-Zahlungen stehen Ihnen je nach Konfiguration verschiedene Zahlungsarten zur Verfügung (z. B. <span class="todo" data-field="payment_methods">[Kartenzahlung, PayPal, Apple Pay/Google Pay – Liste an die tatsächlich aktivierten Zahlarten anpassen]</span>); alternativ ist Barzahlung bei Lieferung oder Abholung möglich.</p>
+<p>Bei Online-Zahlung werden Ihre Zahlungsdaten direkt vom jeweiligen Zahlungsdienstleister erhoben und verarbeitet; wir selbst erhalten keine vollständigen Zahlungsdaten (z. B. keine vollständigen Kartennummern), sondern lediglich eine Bestätigung über den Zahlungseingang. Die Zahlungsabwicklung erfolgt über <span class="todo" data-field="payment_provider">[Zahlungsdienstleister eintragen, z. B. „Mollie B.V., Keizersgracht 126, 1015 CW Amsterdam, Niederlande“]</span> sowie ggf. den von Ihnen gewählten Anbieter (z. B. PayPal (Europe) S.à r.l. et Cie, S.C.A., Luxemburg).</p>
 <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung). Für die Verarbeitung durch die Zahlungsdienstleister gelten deren Datenschutzerklärungen, z. B. <a href="https://www.mollie.com/de/privacy" target="_blank" rel="noopener">mollie.com/de/privacy</a> und <a href="https://www.paypal.com/de/legalhub/privacy-full" target="_blank" rel="noopener">paypal.com – Datenschutz</a>.</p>
 
 <h2>7. Adressvorschläge bei der Eingabe (Photon / OpenStreetMap)</h2>
@@ -84,7 +84,7 @@ E-Mail: <span class="todo">[E-Mail-Adresse]</span></p>
 <p>Zur Ausübung Ihrer Rechte genügt eine formlose Nachricht an die unter Ziffer 1 genannten Kontaktdaten.</p>
 
 <h2>14. Beschwerderecht bei einer Aufsichtsbehörde</h2>
-<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Für uns zuständig ist: <span class="todo">[Aufsichtsbehörde des Bundeslands eintragen, z. B. „Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestraße 2–4, 40213 Düsseldorf, www.ldi.nrw.de“]</span>. Sie können sich auch an die Aufsichtsbehörde Ihres Wohnorts wenden.</p>
+<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Für uns zuständig ist: <span class="todo" data-field="supervisory_authority">[Aufsichtsbehörde des Bundeslands eintragen, z. B. „Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestraße 2–4, 40213 Düsseldorf, www.ldi.nrw.de“]</span>. Sie können sich auch an die Aufsichtsbehörde Ihres Wohnorts wenden.</p>
 
 <h2>15. Keine automatisierte Entscheidungsfindung</h2>
 <p>Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt.</p>
@@ -92,4 +92,4 @@ E-Mail: <span class="todo">[E-Mail-Adresse]</span></p>
 <h2>16. Änderung dieser Datenschutzerklärung</h2>
 <p>Wir passen diese Datenschutzerklärung an, sobald Änderungen an der Bestellseite oder geänderte rechtliche Vorgaben dies erforderlich machen. Es gilt jeweils die hier veröffentlichte Fassung.</p>
 
-<p class="stand">Stand: <span class="todo">[Monat Jahr]</span></p>
+<p class="stand">Stand: <span class="todo" data-field="stand">[Monat Jahr]</span></p>
