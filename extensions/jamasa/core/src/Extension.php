@@ -497,6 +497,16 @@ class Extension extends BaseExtension
                 }
             }
 
+            // (c) Channel attribution: stamp the session-stashed `?src=` token
+            // (CaptureChannelSource) onto the order — visits only prove a
+            // surface got scanned, orders prove it paid. Session is empty for
+            // API/POS orders → src stays NULL there.
+            $src = session(\Jamasa\Core\Http\Middleware\CaptureChannelSource::SESSION_KEY);
+            if (filled($src) && $order->src !== $src) {
+                $order->src = $src;
+                $orderDirty = true;
+            }
+
             if ($orderDirty) {
                 $order->saveQuietly();
             }
@@ -651,5 +661,13 @@ class Extension extends BaseExtension
         // group so it also covers the dynamically-registered stock resources.
         $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
             ->appendMiddlewareToGroup('api', \Jamasa\Core\Http\Middleware\ConfineOwnerToken::class);
+
+        // Channel attribution: capture `?src=` on the first storefront hit into
+        // the session (the param never survives Livewire/normal navigation).
+        // Appended to `web` so it runs AFTER StartSession. See the middleware
+        // docblock for semantics (last touch wins, no extra cookie, strict
+        // validation); the afterSaveOrder listener above stamps orders.src.
+        $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
+            ->appendMiddlewareToGroup('web', \Jamasa\Core\Http\Middleware\CaptureChannelSource::class);
     }
 }
