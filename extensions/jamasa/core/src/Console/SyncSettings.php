@@ -68,6 +68,7 @@ class SyncSettings extends Command
         $this->syncTipCondition();
         $this->syncLegalPagesAndGdprLink();
         $this->syncFooterAndMainNav();
+        $this->syncOrderTypeLeadPolicy();
 
         if ($this->option('defaults')) {
             $this->applyProvisioningDefaults();
@@ -518,6 +519,30 @@ class SyncSettings extends Command
         $this->line('  ✓ footer nav (Impressum · Datenschutz), reservation nav removed');
     }
 
+    /**
+     * Lead time must bind the SLOT PICKER, not only ASAP (invariant; decided
+     * 2026-08-25). Without `add_lead_time` the "Später" list offers the very
+     * next grid slot and the owner's lead time protects nothing — found live
+     * on both tenants (+5 min pickable against a believed 45-min head start).
+     * The lead VALUE stays owner data; only the "it applies" switch is ours.
+     * ⚠️ Write via property assignment only — a direct `->data = [...]` is
+     * silently clobbered by LocationSettings::beforeSave (fetched values win).
+     */
+    protected function syncOrderTypeLeadPolicy(): void
+    {
+        foreach (Location::all() as $location) {
+            foreach (['delivery', 'collection'] as $orderType) {
+                $settings = LocationSettings::instance($location, $orderType);
+                if ((int)$settings->get('add_lead_time', 0) !== 1) {
+                    $settings->add_lead_time = 1;
+                    $settings->save();
+                }
+            }
+        }
+
+        $this->line('  ✓ add_lead_time enforced on delivery + collection (lead time binds the slot picker)');
+    }
+
     /** First run only: values a tenant may legitimately flip later. */
     protected function applyProvisioningDefaults(): void
     {
@@ -529,9 +554,34 @@ class SyncSettings extends Command
             $booking->save();
         }
 
+        // Order-type birth defaults (decided 2026-08-25): lead 30 (Lieferung) /
+        // 20 (Abholung), 5-min slot grid. Owner data overrides via Fragebogen —
+        // guarded to only fill ABSENT values so a re-run with --defaults can
+        // never clobber a deliberate tenant choice. `checkout.limit_orders`
+        // stays deliberately OUT until the double-lead-add fix ships (with
+        // limit_orders on AND add_lead_time on, ASAP promises now+2×lead —
+        // see the #4 TODO's 2026-08-25 findings).
+        foreach (Location::all() as $location) {
+            foreach (['delivery' => 30, 'collection' => 20] as $orderType => $leadDefault) {
+                $settings = LocationSettings::instance($location, $orderType);
+                $dirty = false;
+                if (blank($settings->get('lead_time'))) {
+                    $settings->lead_time = $leadDefault;
+                    $dirty = true;
+                }
+                if (blank($settings->get('time_interval'))) {
+                    $settings->time_interval = 5;
+                    $dirty = true;
+                }
+                if ($dirty) {
+                    $settings->save();
+                }
+            }
+        }
+
         ReviewSettings::set('allow_reviews', 0);
 
-        $this->line('  ✓ defaults applied: reservations off, reviews off, lorem pages unpublished');
+        $this->line('  ✓ defaults applied: reservations off, reviews off, lorem pages unpublished, lead 30/20 + 5-min grid where unset');
     }
 
     protected function firstOrNewPage(string $slug, string $title): Page
