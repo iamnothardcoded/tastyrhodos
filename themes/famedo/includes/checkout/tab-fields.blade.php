@@ -171,6 +171,12 @@
     const PHONE_SESSION_KEY = 'checkout_order_phone';
     const NOTE_SESSION_KEY = 'checkout_order_note';
     const DELNOTE_SESSION_KEY = 'checkout_delivery_note';
+    /* AGB checkbox (2026-08-26): confirming the address modal is a FULL
+       navigation (FulfillmentModal redirects to the checkout URL), so
+       Checkout::mount() re-seeds fields and a ticked AGB silently reset —
+       which then compounded with the (formerly) invisible terms error.
+       Session-only like the notes, cleared on the success page. */
+    const TERMS_SESSION_KEY = 'checkout_terms_agreed';
 
     /* Safe storage: touching window.localStorage throws SecurityError when site
        data is blocked (Chrome), setItem throws QuotaExceededError (old iOS
@@ -233,6 +239,21 @@
         }
         saveSessionField('comment', NOTE_SESSION_KEY);
         saveSessionField('delivery_comment', DELNOTE_SESSION_KEY);
+        saveTerms();
+    }
+
+    /* Checked-state, not .value (a checkbox's value is always "1"). Unlike the
+       merge-never-replace rule for text (an empty input proves nothing), an
+       UNTICKED box after a tick is a deliberate act — so untick DELETES the
+       key, and the restore can never re-tick against the customer's will. */
+    function saveTerms() {
+        const el = document.querySelector('input[type="checkbox"][data-checkout-control="termsAgreed"]');
+        if (!el) return;
+        if (el.checked) {
+            store('s', 'set', TERMS_SESSION_KEY, '1');
+        } else {
+            store('s', 'del', TERMS_SESSION_KEY);
+        }
     }
 
     function restoreFields() {
@@ -256,12 +277,31 @@
         if (note) setField('comment', note);
         const delnote = store('s', 'get', DELNOTE_SESSION_KEY);
         if (delnote) setField('delivery_comment', delnote);
+
+        /* Restore the AGB tick after the modal round-trip: only ever TICK an
+           unticked box (never untick), and hand it to Livewire deferred so it
+           rides the next real request — same contract as setField. */
+        if (store('s', 'get', TERMS_SESSION_KEY) === '1') {
+            const terms = document.querySelector('input[type="checkbox"][data-checkout-control="termsAgreed"]');
+            if (terms && !terms.checked) {
+                terms.checked = true;
+                $wire.set('fields.termsAgreed', '1', false);
+            }
+        }
     }
 
     // Save on blur
     document.addEventListener('blur', function(e) {
         if (e.target.matches && e.target.matches('[data-checkout-control]')) {
             saveFields();
+        }
+    }, true);
+
+    // Checkboxes fire change, not blur-with-value — the AGB tick must be
+    // captured the moment it happens (the modal redirect can follow any time).
+    document.addEventListener('change', function(e) {
+        if (e.target.matches && e.target.matches('input[type="checkbox"][data-checkout-control="termsAgreed"]')) {
+            saveTerms();
         }
     }, true);
 

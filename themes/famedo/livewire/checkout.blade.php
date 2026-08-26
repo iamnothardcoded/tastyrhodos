@@ -9,7 +9,10 @@
         <p class="sheet__desc">
             {!! $customer
                 ? sprintf(lang('igniter.orange::default.text_logged_out'), e($customer->first_name), url('logout'))
-                : sprintf(lang('igniter.orange::default.text_logged_in'), page_url('account.login'))
+                {{-- ?redirect= → ReturnUrl::capture on the login page: a mid-checkout
+                     login must come BACK to checkout, not fall to the Speisekarte
+                     (Global TODO #1 (d) — url.intended was never set from here). --}}
+                : sprintf(lang('igniter.orange::default.text_logged_in'), page_url('account.login').'?redirect='.urlencode(url()->current()))
             !!}
         </p>
     </div>

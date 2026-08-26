@@ -47,6 +47,11 @@ return [
         'amount_missing' => ':amount fehlen noch',
     ],
 
+    'checkout' => [
+        'terms_required' => 'Bitte akzeptiere die AGB, um zu bestellen.',
+        'summary_title' => 'Das fehlt noch:',
+    ],
+
     'address' => [
         'street' => 'Straße',
         'number' => 'Nr.',
@@ -58,6 +63,10 @@ return [
         'no_suggestions' => 'Keine Vorschläge gefunden',
         'searching' => 'Suche Adressen …',
         'checking' => 'Adresse wird geprüft …',
+        'hang_title' => 'Das dauert gerade ungewöhnlich lange',
+        'hang_text' => 'Die Verbindung hängt. Du kannst neu laden oder deine Adresse direkt eintippen – dein Warenkorb bleibt erhalten.',
+        'hang_reload' => 'Neu laden',
+        'hang_manual' => 'Adresse manuell eingeben',
         'search_label' => 'Adresse suchen',
         'search_placeholder' => 'Straße und Hausnummer eingeben …',
         'address2_label' => 'Adresszusatz (optional)',

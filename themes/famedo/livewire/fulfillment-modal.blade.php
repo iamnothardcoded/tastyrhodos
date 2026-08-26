@@ -226,6 +226,20 @@
                             </div>
                         @endunless
                     </div>
+                    {{-- Hang-recovery card (famedo.js watchdog, design locked
+                         2026-07-29): shown when a modal Livewire request has no
+                         response for ~13s. wire:ignore — visibility is toggled
+                         by JS while Livewire may be unresponsive; a morph must
+                         never re-hide or duplicate it. Exactly TWO exits, both
+                         handled by delegated listeners in famedo.js. --}}
+                    <div class="famedo-hang-card d-none" id="famedo-hang-card" wire:ignore>
+                        <div class="famedo-hang-card__title">@lang('jamasa.core::default.address.hang_title')</div>
+                        <div class="famedo-hang-card__text">@lang('jamasa.core::default.address.hang_text')</div>
+                        <div class="famedo-hang-card__actions">
+                            <button type="button" class="famedo-hang-card__btn famedo-hang-card__btn--primary" data-famedo-hang-action="reload">@lang('jamasa.core::default.address.hang_reload')</button>
+                            <button type="button" class="famedo-hang-card__btn" data-famedo-hang-action="manual">@lang('jamasa.core::default.address.hang_manual')</button>
+                        </div>
+                    </div>
                     <div class="modal-footer border-0 sheet__foot">
                         {{-- wire:target=onConfirm: only the actual confirm greys the
                              button. Without the target a background address SEARCH

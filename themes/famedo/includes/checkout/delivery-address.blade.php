@@ -24,11 +24,24 @@
     </div>
     <span class="famedo-addr__change">@lang('igniter.local::default.search.text_change')</span>
 </div>
-<x-igniter-orange::forms.error
-    field="delivery_address"
-    id="delivery-address-feedback"
-    class="text-danger fs-6"
-/>
+{{-- Two possible error keys, one surface: jamasa's checkout listener throws
+     under fields.delivery_address (survives Livewire's error-memo dehydrate —
+     bare keys without a component property die on the next blur commit), the
+     VENDOR's own after()-check still adds bare delivery_address. Prefer the
+     surviving key, never render both (same message twice). --}}
+@if($errors->has('fields.delivery_address'))
+    <x-igniter-orange::forms.error
+        field="fields.delivery_address"
+        id="delivery-address-feedback"
+        class="text-danger fs-6"
+    />
+@else
+    <x-igniter-orange::forms.error
+        field="delivery_address"
+        id="delivery-address-feedback"
+        class="text-danger fs-6"
+    />
+@endif
 {{-- Geocoder-blind fail-open: the order proceeds (restaurant judges by phone),
      but the customer should double-check what they typed — soft info, no block.
      Short line + tap-to-expand ⓘ details. --}}

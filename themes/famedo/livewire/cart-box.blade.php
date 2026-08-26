@@ -33,7 +33,10 @@
                     @php($signupSave = class_exists(\Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::class)
                         ? \Iamnothardcoded\SignupDiscounts\Classes\DiscountManager::wouldBeWelcomeAmount(\Igniter\Cart\Facades\Cart::content()) : 0)
                     @if($signupSave > 0)
-                        <a class="cart-save" href="{{ page_url('account.login') }}">
+                        {{-- ?redirect= → ReturnUrl::capture: after the OTP the
+                             „Weiter" button returns HERE (menu/cart context)
+                             instead of the bare local.menus fallback. --}}
+                        <a class="cart-save" href="{{ page_url('account.login') }}?redirect={{ urlencode(url()->current()) }}">
                             <span class="cart-save__ic">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M12 8C11 5 9 4 7.6 4.8 6.2 5.6 6.7 8 12 8zM12 8c1-3 3-4 4.4-3.2C17.8 5.6 17.3 8 12 8z"/></svg>
                             </span>

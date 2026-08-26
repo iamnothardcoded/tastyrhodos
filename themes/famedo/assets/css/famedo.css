@@ -847,3 +847,20 @@ body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-clo
    independent filters — famedo.js fuseVeg/splitVeg drive the animation) */
 .famedo .fchip.mergedaway{display:none}
 .famedo .fchip.gone{display:none}
+/* ---------- Checkout validation visibility (2026-08-26) ----------
+   AGB checkbox invalid state + validation summary. The checkbox never got
+   is-invalid upstream (field-checkbox override adds it); the summary is the
+   guaranteed-visible recap right above the Bestellen button. */
+.famedo .form-check-input.is-invalid{border-color:var(--hot);box-shadow:0 0 0 4px var(--hot-tint)}
+.famedo .form-check-input.is-invalid~.form-check-label{color:var(--hot)}
+.famedo .famedo-co-errors{border:1.5px solid var(--hot);background:var(--hot-tint);border-radius:14px;padding:13px 15px}
+.famedo .famedo-co-errors__title{font-weight:800;font-size:14px;color:var(--hot);margin-bottom:6px}
+.famedo .famedo-co-errors__list{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink)}
+.famedo .famedo-co-errors__list li{margin-top:3px}
+/* fulfillment-modal hang-recovery card (famedo.js watchdog) */
+.famedo .famedo-hang-card{margin:0 16px 12px;border:1.5px solid var(--line-strong);background:var(--surface-2,#FAFAFB);border-radius:14px;padding:14px 15px}
+.famedo .famedo-hang-card__title{font-weight:800;font-size:14.5px}
+.famedo .famedo-hang-card__text{font-size:13px;color:var(--muted);margin-top:4px}
+.famedo .famedo-hang-card__actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.famedo .famedo-hang-card__btn{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;padding:9px 13px;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer}
+.famedo .famedo-hang-card__btn--primary{background:var(--brand);border-color:var(--brand);color:#fff}

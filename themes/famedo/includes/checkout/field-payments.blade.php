@@ -80,5 +80,11 @@
         </div>
         <x-igniter-orange::forms.error field="{{$field->getName()}}" id="{{$field->getName()}}-feedback"
             class="text-danger"/>
+        {{-- Vendor mis-key: Checkout::validateCheckout adds the invalid-payment
+             error under bare 'payment' while every view echoes fields.payment —
+             upstream that message can never render (PR candidate, see ledger).
+             Catch it here; distinct message from the rule error, so no dupes. --}}
+        <x-igniter-orange::forms.error field="payment" id="payment-vendor-feedback"
+            class="text-danger"/>
     </div>
 @endif

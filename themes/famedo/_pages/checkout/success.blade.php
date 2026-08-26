@@ -25,5 +25,6 @@ try {
     sessionStorage.removeItem('checkout_order_phone');
     sessionStorage.removeItem('checkout_order_note');
     sessionStorage.removeItem('checkout_delivery_note');
+    sessionStorage.removeItem('checkout_terms_agreed');
 } catch (e) { /* storage blocked — nothing to clear */ }
 </script>

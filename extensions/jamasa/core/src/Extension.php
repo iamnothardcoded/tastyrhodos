@@ -80,6 +80,11 @@ class Extension extends BaseExtension
         // nobody could answer during the 2026-08 sender outage. Exits non-zero on
         // alarm so a dead-man's-switch can hang off it. See MailReport.
         $this->registerConsoleCommand('famedo.mail-report', MailReport::class);
+
+        // famedo:checkout-report — "are customers completing checkout?", the
+        // status_id=0 draft-count proxy alarm from Global TODO #1 (e). Same
+        // exit-code contract as mail-report. See CheckoutReport.
+        $this->registerConsoleCommand('famedo.checkout-report', \Jamasa\Core\Console\CheckoutReport::class);
     }
 
     #[Override]
@@ -309,18 +314,106 @@ class Extension extends BaseExtension
             return make_carbon($timeslot)->isToday() ? null : false;
         });
 
-        // Same-day preorder, constraint 2/2: server-side checkout guard. The
+        // AGB checkbox: upstream ships 'termsAgreed' => ['sometimes','accepted']
+        // (orange checkoutfields.php). 'sometimes' skips the rule entirely when
+        // the key is absent from the payload — a crafted or Livewire-desynced
+        // request could complete checkout WITHOUT the AGB tick, silently.
+        // Harden to required+accepted with a famedo message.
+        //  - isset() guard: the vendor unsets the field when agreeTermsSlug is
+        //    empty (Checkout::formExtendFieldsBefore) — then nothing to enforce.
+        //    ⚠️ That vendor path ALSO strips the rule (validateCheckout
+        //    array_except) — if a future config empties the slug, this listener
+        //    goes inert with it; the AGB then simply isn't asked, not broken.
+        //  - CheckoutForm prefixes rule/message keys with 'fields.' itself.
+        // ⚠️ fireSystemEvent dispatches with halt=true — MUST return nothing.
+        // Upstream-PR candidate: the 'sometimes' bypass (see UPSTREAM PR LEDGER).
+        Event::listen('checkout.form.extendFieldsBefore', function ($form): void {
+            if (!$form instanceof \Igniter\Cart\Classes\CheckoutForm
+                || !isset($form->config['rules']['termsAgreed'])) {
+                return;
+            }
+            $form->config['rules']['termsAgreed'] = ['required', 'accepted'];
+            $form->config['messages']['termsAgreed.required'] = lang('jamasa.core::default.checkout.terms_required');
+            $form->config['messages']['termsAgreed.accepted'] = lang('jamasa.core::default.checkout.terms_required');
+        });
+
+        // ONE listener for every famedo checkout objection (merged 2026-08-26 —
+        // was two listeners that each threw alone, so the customer fixed one
+        // problem only to be shown the next; now all objections surface in the
+        // SAME round). Keys are deliberately DOUBLED under 'fields.*': Livewire
+        // drops error-bag keys that don't map to a component property when it
+        // dehydrates (SupportValidation::dehydrate + Utils::hasProperty), and
+        // famedo binds inputs wire:model.blur — so a bare 'order_time' or
+        // 'delivery_address' message dies on the very next blur commit, while
+        // 'fields.*' survives (root property 'fields' exists). The unprefixed
+        // twins stay one release for the theme's existing error surfaces.
+        //
+        // (1) Same-day preorder, constraint 2/2: server-side checkout guard. The
         // timeslot filter above shapes the UI, but checkOrderTime() itself
         // (CartManager, FulfillmentModal, CartBox) accepts anything inside the
         // future_orders day window — a crafted request could still book tomorrow.
         // Reject at the money moment instead.
+        //
+        // (2) Delivery orders MUST carry an address (2026-08-03). Backstop for a
+        // hole found on dev: three delivery orders (666/667/668) were accepted
+        // with address_id=NULL and no address data whatsoever. Upstream's own
+        // check lives in Checkout::validateCheckout() as a $validator->after()
+        // callback — it demonstrably did not block, even though
+        // OrderManager::validateDeliveryAddress() rejects that exact (empty)
+        // input when called directly, and the withValidator/after/rescue
+        // mechanism blocks correctly when exercised in isolation. Root cause
+        // therefore still UNKNOWN — this guard is deliberately independent of it.
+        // Placement: 'igniter.orange.validateCheckout' fires at the END of
+        // validateCheckout, i.e. AFTER upstream validation passed but BEFORE
+        // onConfirm calls saveOrder() — so throwing here blocks the order and
+        // nothing is persisted. Gate on Location::orderType(), NOT
+        // $order->order_type: orderType() is exactly what
+        // applyRequiredAttributes() writes onto the order at save time, so
+        // "will this be SAVED as delivery?" cannot desync from what we check.
+        // (A stale/absent session key defaults to delivery, which fails safe —
+        // it can only ever ask for an address, never skip asking.)
         Event::listen('igniter.orange.validateCheckout', function ($data = null, $order = null): void {
+            $errors = [];
+
             if (!\Igniter\Local\Facades\Location::orderDateTime()->isToday()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'order_time' => lang('jamasa.core::default.preorder.same_day_only'),
-                ]);
+                $msg = lang('jamasa.core::default.preorder.same_day_only');
+                $errors['fields.order_time'] = $msg;
+                $errors['order_time'] = $msg;
+            }
+
+            if (\Igniter\Local\Facades\Location::orderType() === \Igniter\Local\Models\Location::DELIVERY) {
+                $fields = (array)$data;
+                if (!filled($fields['address_1'] ?? null) && !filled($fields['address_id'] ?? null)) {
+                    \Illuminate\Support\Facades\Log::warning('famedo: blocked a delivery order with no address', [
+                        'order_id' => $order?->order_id,
+                        'order_type_in_memory' => $order?->order_type,
+                        'isDeliveryType' => $order?->isDeliveryType(),
+                        'session_orderType' => \Igniter\Local\Facades\Location::orderType(),
+                        'userPositionValid' => \Igniter\Local\Facades\Location::userPosition()?->isValid(),
+                    ]);
+
+                    $msg = lang('jamasa.core::default.address.required_for_delivery');
+                    $errors['fields.delivery_address'] = $msg;
+                    $errors['delivery_address'] = $msg;
+                }
+            }
+
+            if ($errors !== []) {
+                throw \Illuminate\Validation\ValidationException::withMessages($errors);
             }
         });
+
+        // Checkout-failure telemetry: log every checkout ValidationException
+        // (field names + failing rules, NEVER values) — the "why do customers
+        // give up" line the 2026-08-08 El Greco audit was missing. Same
+        // structured-NOTICE convention as the geocoder rescue log and the src
+        // capture (see CaptureChannelSource docblock); consumer = the future
+        // ANALYTICS-HOME. ⚠️ Livewire's componentHook() registry is baked at
+        // Livewire boot, BEFORE extensions boot — a hook registered here is
+        // silently ignored. The EventBus (`on`) is checked at fire time, so
+        // this is the seam that actually works from an extension (details in
+        // the class docblock).
+        \Livewire\on('exception', [\Jamasa\Core\Livewire\Features\LogCheckoutRejections::class, 'handle']);
 
         // Auto-accept: the instant an order is paid (admin.order.paymentProcessed),
         // promote it 1 -> 10 ("Angenommen") in auto mode so the printer prints it.
@@ -385,50 +478,6 @@ class Extension extends BaseExtension
         // can't desync; the un-stamp branch heals any leftover from earlier
         // attempts. Session position is null for API/POS-created orders.
         // ONE afterSaveOrder listener does both order mutations then a SINGLE
-        // ---------- Delivery orders MUST carry an address (2026-08-03) ----------
-        // Backstop for a hole found on dev: three delivery orders (666/667/668)
-        // were accepted with address_id=NULL and no address data whatsoever.
-        // Upstream's own check lives in Checkout::validateCheckout() as a
-        // $validator->after() callback — it demonstrably did not block, even
-        // though OrderManager::validateDeliveryAddress() rejects that exact
-        // (empty) input when called directly, and the withValidator/after/rescue
-        // mechanism blocks correctly when exercised in isolation. Root cause
-        // therefore still UNKNOWN — this guard is deliberately independent of it.
-        //
-        // Placement: 'igniter.orange.validateCheckout' fires at the END of
-        // validateCheckout, i.e. AFTER upstream validation passed but BEFORE
-        // onConfirm calls saveOrder() — so throwing here blocks the order and
-        // nothing is persisted.
-        //
-        // Gate on Location::orderType(), NOT $order->order_type: orderType() is
-        // exactly what applyRequiredAttributes() writes onto the order at save
-        // time, so "will this be SAVED as delivery?" cannot desync from what we
-        // check. (A stale/absent session key defaults to delivery, which fails
-        // safe — it can only ever ask for an address, never skip asking.)
-        // The 'delivery_address' key matches the theme's existing error surface.
-        Event::listen('igniter.orange.validateCheckout', function($data = null, $order = null): void {
-            if (\Igniter\Local\Facades\Location::orderType() !== \Igniter\Local\Models\Location::DELIVERY) {
-                return;
-            }
-
-            $fields = (array)$data;
-            if (filled($fields['address_1'] ?? null) || filled($fields['address_id'] ?? null)) {
-                return;
-            }
-
-            \Illuminate\Support\Facades\Log::warning('famedo: blocked a delivery order with no address', [
-                'order_id' => $order?->order_id,
-                'order_type_in_memory' => $order?->order_type,
-                'isDeliveryType' => $order?->isDeliveryType(),
-                'session_orderType' => \Igniter\Local\Facades\Location::orderType(),
-                'userPositionValid' => \Igniter\Local\Facades\Location::userPosition()?->isValid(),
-            ]);
-
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'delivery_address' => lang('jamasa.core::default.address.required_for_delivery'),
-            ]);
-        });
-
         // order write (was two listeners → two writes on the hottest path):
         //  (a) rescue-note stamp for geocoder-blind delivery orders;
         //  (b) order ↔ customer identity for logged-in customers.

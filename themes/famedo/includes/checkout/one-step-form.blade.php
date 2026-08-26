@@ -15,6 +15,11 @@
 
             @includeWhen($order->isDeliveryType(), 'igniter-orange::includes.checkout.delivery-address')
         </div>
+        {{-- Surface for the same-day/order-time guard: jamasa throws under
+             fields.order_time — before 2026-08-26 NO view echoed that key, so
+             the rejection was 100% invisible to the customer. --}}
+        <x-igniter-orange::forms.error field="fields.order_time" id="order-time-feedback"
+            class="text-danger fs-6"/>
     </div>
 
     <div class="famedo-co-sec">
@@ -30,6 +35,22 @@
     @include('igniter-orange::includes.checkout.tab-fields', [
         'fields' => $this->formTabFields('terms'),
     ])
+
+    {{-- Validation summary — guaranteed-visible recap of EVERY objection,
+         directly where the eye is after tapping Bestellen. Inline surfaces
+         stay the scroll anchors: the container id deliberately does NOT end
+         in -feedback (famedo.js firstError() contract). array_unique: the
+         jamasa listener double-keys messages (fields.* + bare) on purpose. --}}
+    @if($errors->any())
+        <div class="famedo-co-sec famedo-co-errors" id="checkout-error-summary" role="alert">
+            <div class="famedo-co-errors__title">@lang('jamasa.core::default.checkout.summary_title')</div>
+            <ul class="famedo-co-errors__list">
+                @foreach(array_unique($errors->all()) as $message)
+                    <li>{{ $message }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="famedo-co-sec">
         <button

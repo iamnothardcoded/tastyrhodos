@@ -582,6 +582,92 @@
     });
 })();
 
+/* ---------- Fulfillment-modal hang recovery (watchdog, 2026-08-26) ----------
+   A slow/hung geocode (cold public-OSM lookups run 1–9 s; a backgrounded tab
+   can freeze a request forever) used to wedge the modal: Confirm stuck
+   disabled, stale suggestions, no way out but knowing to hard-reload. Design
+   locked 2026-07-29 (approved demo): when a Livewire request belonging to the
+   modal has had no response for HANG_MS, show a recovery card with EXACTLY
+   two real exits — „Neu laden" (fresh Livewire state) and „Adresse manuell
+   eingeben" (the existing addrManual() path: fully client-side, bypasses the
+   hung geocode; the addrBlocked gate still requires a complete address).
+   Deliberately NO „Weiter warten" (fixes nothing) and NO re-enabling Confirm
+   (would confirm nothing valid) — both rejected in the 2026-07-29 review.
+   HANG_MS = 13 s: safely above the 9 s worst-case cold geocode.
+   Timer discipline: backgrounded tabs throttle setTimeout, so the truth is
+   the Date.now() start stamp — visibilitychange re-judges elapsed time. */
+(function () {
+    var HANG_MS = 13000;
+    var inflight = 0;
+    var startedAt = 0;
+    var timer = null;
+
+    function modalOpen() {
+        var m = document.getElementById('fulfillmentModal');
+        return !!(m && m.classList.contains('show'));
+    }
+    function card() { return document.getElementById('famedo-hang-card'); }
+    function show() { var c = card(); if (c && modalOpen()) c.classList.remove('d-none'); }
+    function hide() { var c = card(); if (c) c.classList.add('d-none'); }
+    function disarm() {
+        inflight = 0; startedAt = 0;
+        if (timer) { clearTimeout(timer); timer = null; }
+    }
+    function check() {
+        if (inflight > 0 && startedAt && (Date.now() - startedAt) >= HANG_MS) show();
+    }
+
+    function isModalCommit(component) {
+        var root = document.getElementById('fulfillmentModal');
+        root = root && root.closest('[wire\\:id]');
+        return !!(root && component && component.id === root.getAttribute('wire:id'));
+    }
+
+    function attach() {
+        if (!window.Livewire || typeof Livewire.hook !== 'function') return false;
+        Livewire.hook('commit', function (opts) {
+            if (!opts || !isModalCommit(opts.component) || !modalOpen()) return;
+            inflight++;
+            startedAt = Date.now();
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(check, HANG_MS + 100);
+            // succeed OR fail = the network answered = not hung. A fast
+            // network error is Livewire's own problem to render, not ours.
+            var settle = function () {
+                inflight = Math.max(0, inflight - 1);
+                if (inflight === 0) { disarm(); hide(); }
+            };
+            if (typeof opts.succeed === 'function') opts.succeed(settle);
+            if (typeof opts.fail === 'function') opts.fail(settle);
+        });
+        return true;
+    }
+    if (!attach()) document.addEventListener('livewire:init', attach);
+
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) check();
+    });
+
+    document.addEventListener('hidden.bs.modal', function (e) {
+        if (e.target && e.target.id === 'fulfillmentModal') { disarm(); hide(); }
+    });
+
+    // Delegated so Livewire morphs can never detach the handlers.
+    document.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('[data-famedo-hang-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-famedo-hang-action');
+        if (action === 'reload') { window.location.reload(); return; }
+        if (action === 'manual') {
+            hide(); disarm();
+            var content = document.querySelector('#fulfillmentModal .modal-content');
+            var data = (window.Alpine && typeof Alpine.$data === 'function' && content)
+                ? Alpine.$data(content) : null;
+            if (data && typeof data.addrManual === 'function') data.addrManual();
+        }
+    });
+})();
+
 /* Slot dead-end recovery: after switching to a date whose slots don't include
    the previously-picked time, select the NEAREST free slot to that time (not
    just the first) so the choice stays as close as possible to what the customer
@@ -719,11 +805,24 @@ window.fmSelectNearestSlot = function (prevTime) {
         timer = null;
         if (!armed) return;
         var err = firstError();
-        if (!err) return;
+        if (!err) {
+            // Fallback: the summary block (id deliberately NOT ending in
+            // -feedback, so it never outranks an inline surface). Catches any
+            // error keyed without an inline echo — the customer at least sees
+            // the recap instead of "nothing happened".
+            var summary = document.getElementById('checkout-error-summary');
+            if (summary && summary.offsetParent !== null && !fullyVisible(summary)) {
+                armed = false;
+                summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
         armed = false;
         // Scroll the whole field wrapper (label + input + message), not the
         // bare error line, so the customer sees WHAT is wrong, not just why.
-        var box = err.closest('.col-sm-6') || err.closest('.famedo-co-sec') || err;
+        // .form-group: the AGB checkbox block (field-checkbox override) has
+        // neither a .col-sm-6 nor a .famedo-co-sec wrapper.
+        var box = err.closest('.col-sm-6') || err.closest('.form-group') || err.closest('.famedo-co-sec') || err;
         // Already on screen (desktop, where the form often fits): don't jump.
         var moved = !fullyVisible(box);
         if (moved) box.scrollIntoView({ behavior: 'smooth', block: 'center' });

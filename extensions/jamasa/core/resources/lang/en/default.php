@@ -48,6 +48,11 @@ return [
         'amount_missing' => ':amount to go',
     ],
 
+    'checkout' => [
+        'terms_required' => 'Please accept the terms and conditions to order.',
+        'summary_title' => 'Still missing:',
+    ],
+
     'address' => [
         'street' => 'Street',
         'number' => 'No.',
@@ -59,6 +64,10 @@ return [
         'no_suggestions' => 'No suggestions found',
         'searching' => 'Searching addresses …',
         'checking' => 'Checking address …',
+        'hang_title' => 'This is taking unusually long',
+        'hang_text' => 'The connection is stuck. Reload the page or type your address directly – your cart is safe.',
+        'hang_reload' => 'Reload',
+        'hang_manual' => 'Enter address manually',
         'search_label' => 'Search address',
         'search_placeholder' => 'Enter street and house number …',
         'address2_label' => 'Address extra (optional)',
