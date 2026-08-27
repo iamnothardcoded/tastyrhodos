@@ -864,3 +864,24 @@ body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-clo
 .famedo .famedo-hang-card__actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
 .famedo .famedo-hang-card__btn{border:1.5px solid var(--line-strong);background:#fff;border-radius:12px;padding:9px 13px;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer}
 .famedo .famedo-hang-card__btn--primary{background:var(--brand);border-color:var(--brand);color:#fff}
+/* ---------- Cookie info-notice as corner card (owner decision 2026-08-27) ----------
+   Vendor ships a full-width fixed bottom bar (z-index 9999) that sat exactly
+   on the cartbar/cart CTA on every viewport. It is an INFO notice (only
+   technically necessary cookies — no consent required), so it becomes a small
+   floating card: left-aligned, raised ABOVE the cartbar zone (cartbar =
+   bottom:16px + ~52px tall, z-index 40). z-index 45: above cartbar, below
+   Bootstrap modals — the vendor 9999 also sat on top of open modals.
+   Tenant colors stay: background/text are inline styles from theme settings. */
+.famedo #euCookieBanner > div{
+  position:fixed;left:16px;right:auto;bottom:88px;z-index:45;
+  width:calc(100vw - 32px);max-width:360px;
+  border-radius:14px;padding:14px 16px;font-size:13px;
+  box-shadow:0 10px 30px rgba(30,35,45,.25);
+}
+.famedo #euCookieBanner .container{padding:0;margin:0;max-width:none}
+.famedo #euCookieBanner .d-flex{flex-direction:column;align-items:flex-start!important;gap:10px}
+.famedo #euCookieBanner #eu-cookie-message{line-height:1.45}
+.famedo #euCookieBanner #eu-cookie-action{
+  align-self:flex-end;margin-left:0!important;
+  padding:7px 16px;border-radius:10px;font-size:13.5px;font-weight:700;
+}

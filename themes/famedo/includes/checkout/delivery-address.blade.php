@@ -13,11 +13,19 @@
     data-bs-target="#fulfillmentModal"
     data-famedo-addr-only="1"
 >
-    @php($deliveryAddress = array_filter(array_only($fields, ['address_1', 'city', 'state', 'postcode'])))
+    {{-- ONE address style everywhere: "Straße Nr, PLZ Stadt" via
+         AddressFormat::displayLine (owner rule 2026-08-27). The raw $fields
+         here come from the vendor's prepareDeliveryAddress, which composes
+         address_1 US-order ("12 Musterstraße") and parks the DISTRICT in city
+         with the real city in state — format_address rendered exactly that.
+         The helper germanizes + prefers state; see its docblock. --}}
+    @php($deliveryAddress = \Jamasa\Core\Helpers\AddressFormat::displayLine(
+        $fields['address_1'] ?? null, $fields['city'] ?? null,
+        $fields['state'] ?? null, $fields['postcode'] ?? null))
     <i class="fas fa-location-dot famedo-addr__ic"></i>
     <div class="famedo-addr__main">
-        @if($deliveryAddress)
-            {{ html(format_address($deliveryAddress, false)) }}
+        @if($deliveryAddress !== '')
+            {{ $deliveryAddress }}
         @else
             <span class="famedo-addr__empty">@lang('igniter.orange::default.text_no_delivery_address')</span>
         @endif

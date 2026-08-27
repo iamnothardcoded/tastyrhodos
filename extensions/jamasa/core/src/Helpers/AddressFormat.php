@@ -30,4 +30,30 @@ class AddressFormat
 
         return $address1;
     }
+
+    /**
+     * THE one customer-facing address line: "Straße Nr, PLZ Stadt".
+     *
+     * Owner rule (2026-08-27 phone e2e): every surface reuses this ONE style —
+     * it is the same composition the menu hero (local-header), the fulfillment
+     * picker (famedo.js addrSync) and the printed Maps-QR already use. Never
+     * invent another variant, never use core's format_address() for customer
+     * addresses (its template renders "Stadt PLZ" + a trailing state line).
+     *
+     * Two traps this line dodges, both live-proven:
+     *  - vendor prepareDeliveryAddress composes address_1 as "12 Musterstraße"
+     *    (US order) → germanize() flips it; already-German input is untouched.
+     *  - suggestion-picked positions carry the DISTRICT in `city` and the real
+     *    city in `state` (Photon/Nominatim locality mapping — the district-in-
+     *    city data trap). Prefer `state` when filled, exactly like the
+     *    print-server's Maps-QR composition; manual/legacy rows have an empty
+     *    `state` and fall back to `city`, which is the real city there.
+     */
+    public static function displayLine(?string $address1, ?string $city, ?string $state, ?string $postcode): string
+    {
+        $street = trim((string) self::germanize($address1));
+        $town = trim(trim((string) $postcode).' '.(filled($state) ? trim((string) $state) : trim((string) $city)));
+
+        return trim($street.($street !== '' && $town !== '' ? ', ' : '').$town, ', ');
+    }
 }
