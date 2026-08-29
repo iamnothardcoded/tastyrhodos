@@ -45,11 +45,13 @@ use Override;
 class Extension extends BaseExtension
 {
     /**
-     * Override the Mollie gateway registration with our fixed subclass (see
-     * Payments\Mollie). PaymentGateways::listGateways keys by CODE with
-     * last-writer-wins, and jamasa registers after igniter.payregister, so
-     * fresh installs seed payments.class_name with the fixed class; existing
-     * rows need the one-time class_name UPDATE (runbook §3.2).
+     * Keep registering the Mollie gateway under our (now empty) subclass —
+     * live tenant DB rows bind payments.class_name = Jamasa\Core\Payments\Mollie,
+     * so the name must stay resolvable forever (see Payments\Mollie docblock).
+     * PaymentGateways::listGateways keys by CODE with last-writer-wins, and
+     * jamasa registers after igniter.payregister, so fresh installs seed the
+     * same class name; existing rows need the one-time class_name UPDATE
+     * (runbook §3.2).
      */
     public function registerPaymentGateways(): array
     {
@@ -200,15 +202,6 @@ class Extension extends BaseExtension
                 $container['config']['igniter-geocoder.providers.nominatim'] ?? [],
             );
         });
-
-        // Fixed PayPal client (upstream picks the API host from APP_ENV instead
-        // of the gateway's sandbox setting — see Classes\PayPalClient). Rebinding
-        // the singleton here wins because extension boot runs after payregister's
-        // $singletons registration; PaypalExpress resolves it from the container.
-        $this->app->singleton(
-            \Igniter\PayRegister\Classes\PayPalClient::class,
-            \Jamasa\Core\Classes\PayPalClient::class,
-        );
 
         // Fixed OrderManager (upstream getCartTotals persists STALE condition
         // values — a Liefern→Abholen switch before ordering silently charges
