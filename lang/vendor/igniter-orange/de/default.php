@@ -21,6 +21,9 @@ return [
     'menus_title' => 'Speisekarte',
     'checkout_title' => 'Kasse',
     'checkout_success_title' => 'Bestellbestätigung',
+    // checkout section header — rendered untranslated ("YOUR DETAILS") until
+    // 2026-08-31; caught on the owner-eyeball screenshot
+    'label_your_details' => 'Deine Angaben',
     'account_title' => 'Konto',
     'account_orders_title' => 'Bestellungen',
     'account_order_title' => 'Bestellung',
