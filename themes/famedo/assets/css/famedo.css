@@ -884,6 +884,12 @@ body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-clo
   border-radius:14px;padding:14px 16px;font-size:13px;
   box-shadow:0 10px 30px rgba(30,35,45,.25);
 }
+/* desktop: left edge flush with the cartbar/app column instead of the
+   viewport corner (owner 2026-08-31); height unchanged. 50vw-300px = the
+   cartbar's left edge once its min(--wrap,100%-24px) resolves to 600px. */
+@media(min-width:640px){
+  .famedo #euCookieBanner > div{ left:calc(50vw - 300px); }
+}
 .famedo #euCookieBanner .container{padding:0;margin:0;max-width:none}
 .famedo #euCookieBanner .d-flex{flex-direction:column;align-items:flex-start!important;gap:10px}
 .famedo #euCookieBanner #eu-cookie-message{line-height:1.45}
