@@ -28,13 +28,22 @@
         ])
     </div>
 
-    @include('igniter-orange::includes.checkout.tab-fields', [
-        'fields' => $this->formTabFields('payments'),
-    ])
+    {{-- famedo-co-sec wrappers: a Bootstrap .row's negative side margins must
+         land inside a padded container — as a direct <form> child they stick
+         out past the page edge (~8px each side at g-3) and horizontally
+         scroll narrow phones. The details/comments sections above get this
+         for free; payments/terms were bare (fixed 2026-08-31). --}}
+    <div class="famedo-co-sec">
+        @include('igniter-orange::includes.checkout.tab-fields', [
+            'fields' => $this->formTabFields('payments'),
+        ])
+    </div>
 
-    @include('igniter-orange::includes.checkout.tab-fields', [
-        'fields' => $this->formTabFields('terms'),
-    ])
+    <div class="famedo-co-sec">
+        @include('igniter-orange::includes.checkout.tab-fields', [
+            'fields' => $this->formTabFields('terms'),
+        ])
+    </div>
 
     {{-- Validation summary — guaranteed-visible recap of EVERY objection,
          directly where the eye is after tapping Bestellen. Inline surfaces

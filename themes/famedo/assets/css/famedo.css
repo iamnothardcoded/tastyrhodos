@@ -571,6 +571,9 @@ body.famedo.famedo-notes-open .addnote-link{display:none}
 .famedo .cart-summary{padding:14px 0 4px}
 .famedo .cart-summary .row{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;color:var(--muted);margin:0;flex-wrap:nowrap}
 .famedo .cart-summary .row > *{width:auto;padding:0;flex:none}
+/* the label column may shrink+wrap; the amount stays rigid right-aligned —
+   a long totals label (payment fee, Pfand line) must never widen the page */
+.famedo .cart-summary .row > :first-child{flex:0 1 auto;min-width:0;overflow-wrap:anywhere}
 .famedo .cart-summary .row.tot{color:var(--ink);font-weight:700;font-size:17px;padding-top:10px;border-top:1px solid var(--line);margin-top:6px}
 .famedo .cart-summary .row.disc{color:var(--veg);font-weight:600}
 .famedo .cart-summary .row button{border:none;background:none;color:var(--muted);font-size:12px;text-decoration:underline;padding:0 0 0 6px}
@@ -853,9 +856,12 @@ body.ordering-paused [data-control="cart-item"] .sheet__locked,body.ordering-clo
    guaranteed-visible recap right above the Bestellen button. */
 .famedo .form-check-input.is-invalid{border-color:var(--hot);box-shadow:0 0 0 4px var(--hot-tint)}
 .famedo .form-check-input.is-invalid~.form-check-label{color:var(--hot)}
-.famedo .famedo-co-errors{border:1.5px solid var(--hot);background:var(--hot-tint);border-radius:14px;padding:13px 15px}
+/* explicit side margins: the padding here outweighs .famedo-co-sec's
+   padding:0 20px (same specificity, later rule) — without them the box goes
+   full-bleed to the viewport edge on phones */
+.famedo .famedo-co-errors{border:1.5px solid var(--hot);background:var(--hot-tint);border-radius:14px;padding:13px 15px;margin:0 20px 10px}
 .famedo .famedo-co-errors__title{font-weight:800;font-size:14px;color:var(--hot);margin-bottom:6px}
-.famedo .famedo-co-errors__list{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink)}
+.famedo .famedo-co-errors__list{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink);overflow-wrap:anywhere}
 .famedo .famedo-co-errors__list li{margin-top:3px}
 /* fulfillment-modal hang-recovery card (famedo.js watchdog) */
 .famedo .famedo-hang-card{margin:0 16px 12px;border:1.5px solid var(--line-strong);background:var(--surface-2,#FAFAFB);border-radius:14px;padding:14px 15px}

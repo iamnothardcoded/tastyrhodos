@@ -116,6 +116,9 @@ $pack = [
     'alert_location_required' => 'Kein Standort gefunden oder ausgewählt',
     'alert_order_type_required' => 'Es gibt keine aktive Online-Bestelloption für diesen Standort',
     'alert_order_is_unavailable' => 'Das Restaurant nimmt zum ausgewählten Zeitpunkt keine Bestellungen entgegen.',
+    // Fires on the famedo checkout (orange ≥4.2.2 address check) next to
+    // famedo's Du-form messages → deliberately Du-form, unlike this pack.
+    'alert_missing_street_address' => 'Bitte gib eine gültige Lieferadresse mit Straße und Hausnummer an.',
     'alert_slot_time_required' => 'Bitte wählen Sie eine Zeitangabe aus.',
     'alert_slot_date_required' => 'Bitte wählen Sie ein Datum.',
     'alert_slot_type_required' => 'Bitte wählen Sie einen Typ.',
