@@ -711,5 +711,13 @@ class Extension extends BaseExtension
         // validation); the afterSaveOrder listener above stamps orders.src.
         $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
             ->appendMiddlewareToGroup('web', \Jamasa\Core\Http\Middleware\CaptureChannelSource::class);
+
+        // Single-order-type locations: repair a disabled session order type
+        // in-request instead of letting the vendor's Livewire mount fix it
+        // via a self-redirect — cookie-less crawlers loop on that 302 forever
+        // (pickup-only tenant = invisible to Google). See the middleware
+        // docblock; acts only where the vendor would have redirected.
+        $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
+            ->appendMiddlewareToGroup('web', \Jamasa\Core\Http\Middleware\EnsureSessionOrderType::class);
     }
 }
