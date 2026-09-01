@@ -201,12 +201,16 @@ body.famedo{
 .famedo .toggle.delivery .toggle__thumb{background:var(--brand);box-shadow:0 3px 10px rgba(200,80,10,.4)}
 .famedo .toggle.pickup .toggle__thumb{background:var(--pickup);box-shadow:0 3px 10px rgba(30,110,130,.4);transform:translateX(100%)}
 .famedo .toggle.single .toggle__thumb{width:calc(100% - 8px)}
-.famedo .toggle button,.famedo .toggle [role="button"]{
+/* single-type badge: full-width thumb must not slide (pickup normally
+   translates the half-width thumb to the right half) */
+.famedo .toggle.single.pickup .toggle__thumb{transform:none}
+.famedo .toggle .toggle__label{cursor:default}
+.famedo .toggle button,.famedo .toggle [role="button"],.famedo .toggle .toggle__label{
   flex:1;position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:7px;
   font-weight:600;font-size:14px;color:var(--muted);transition:color .25s;
   border:none;background:none;cursor:pointer;
 }
-.famedo .toggle button.on,.famedo .toggle [role="button"].on{color:#fff}
+.famedo .toggle button.on,.famedo .toggle [role="button"].on,.famedo .toggle .toggle__label.on{color:#fff}
 .famedo .mode__info{text-align:center;font-size:12.5px;color:var(--muted);margin:9px 14px 0;font-weight:500}
 .famedo .mode__info a{color:inherit;text-decoration:underline;font-weight:600}
 

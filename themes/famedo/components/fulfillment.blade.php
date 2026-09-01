@@ -41,15 +41,38 @@
         </div>
     </div>
 @else
-    @php($orderTypes = \Igniter\Local\Facades\Location::getOrderTypes())
+    {{-- ENABLED types only (getActiveOrderTypes): the unfiltered list rendered
+         a clickable button for a disabled type, whose tap made the modal's
+         updateOrderType() throw server-side (found at the pickup-only-badge
+         build 2026-09-01). One type => static badge, no choice to offer. --}}
+    @php($orderTypes = \Igniter\Local\Facades\Location::getActiveOrderTypes())
     @php($isPaused = \Jamasa\Core\Helpers\OrderingState::isPaused())
+    @php($singleType = $orderTypes->count() === 1 ? $orderTypes->first() : null)
 
-    @if ($activeOrderType && !$activeOrderType->isDisabled() && $orderTypes->isNotEmpty())
+    @if ($singleType)
+        {{-- Pickup-only (or delivery-only) location: non-interactive badge in
+             the pill's anchor position (owner decision 2026-08-31). Color
+             class comes from the SINGLE type — a fresh session may still
+             carry the disabled type as $activeOrderType. No
+             data-famedo-ordertype, no data-bs-toggle: famedo.js keys off the
+             attribute, so the badge is inert without any JS change. Time
+             editing stays on the mode__info "ändern" link below. --}}
+        <div @class([
+            'toggle', 'single',
+            'delivery' => $singleType->getCode() === 'delivery',
+            'pickup' => $singleType->getCode() !== 'delivery',
+        ])>
+            <div class="toggle__thumb"></div>
+            <span class="toggle__label on">
+                <i @class(['fa-solid', 'fa-truck-fast' => $singleType->getCode() === 'delivery', 'fa-bag-shopping' => $singleType->getCode() !== 'delivery']) aria-hidden="true"></i>
+                {{ $singleType->getLabel() }}
+            </span>
+        </div>
+    @elseif ($activeOrderType && !$activeOrderType->isDisabled() && $orderTypes->isNotEmpty())
         <div @class([
             'toggle',
             'delivery' => $activeOrderType->getCode() === 'delivery',
             'pickup' => $activeOrderType->getCode() !== 'delivery',
-            'single' => $orderTypes->count() < 2,
         ])>
             <div class="toggle__thumb"></div>
             @foreach ($orderTypes as $orderType)
