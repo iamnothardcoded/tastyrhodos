@@ -123,7 +123,9 @@ class CreateOwner extends Command
 
     protected function report(User $user, UserRole $role, bool $isNew, ?string $password): void
     {
-        $url = rtrim((string) config('app.url'), '/').'/staff-pos/owner-console.html';
+        // "famedo Manager" (named 2026-09-12) — the /manager Traefik route
+        // serves hub/owner-console.html behind the /hub BasicAuth.
+        $url = rtrim((string) config('app.url'), '/').'/manager';
 
         $this->newLine();
         $this->info($isNew ? '✓ Owner account created.' : '✓ Owner account updated.');
